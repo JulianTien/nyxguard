@@ -2,13 +2,13 @@
 
 import os
 
-import uvicorn
-
 from config import get_settings
 from main import app
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     settings = get_settings()
     uvicorn.run(
         "server:app",

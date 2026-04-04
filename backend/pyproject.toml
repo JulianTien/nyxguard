@@ -2,6 +2,18 @@
 name = "nyxguard-backend"
 version = "0.1.0"
 requires-python = ">=3.12"
+dependencies = [
+  "fastapi==0.117.1",
+  "uvicorn[standard]==0.35.0",
+  "gunicorn==23.0.0",
+  "sqlalchemy==2.0.43",
+  "psycopg[binary]==3.2.9",
+  "pydantic-settings==2.10.1",
+  "python-dotenv==1.1.1",
+  "bcrypt==4.3.0",
+  "PyJWT==2.10.1",
+  "httpx==0.28.1",
+]
 
 [project.scripts]
 app = "server:app"
