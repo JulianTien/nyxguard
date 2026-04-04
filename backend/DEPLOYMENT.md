@@ -128,7 +128,8 @@ Recommended Android URL sources:
 
 ## Future Vercel Migration
 - Deploy `backend/` as the Vercel Project Root Directory, not the repository root.
-- `backend/index.py` exposes the Vercel entrypoint and `backend/vercel.json` sets function limits.
+- `backend/index.py` exposes the Vercel entrypoint.
+- Keep `backend/vercel.json` minimal when using the root `index.py` FastAPI entrypoint. The `functions` glob in `vercel.json` is for files under `api/` and will fail if pointed at `index.py`.
 - Keep `DATABASE_URL` as the runtime URL and `DATABASE_URL_NON_POOLING` as the direct URL.
 - If Vercel or a Vercel Marketplace integration injects provider-specific Postgres variables later, map them into these two names instead of changing application code.
 - Do not mount this backend under a Vercel Services `routePrefix` of `/api`, because the application already owns `/api/...` routes.
