@@ -2,6 +2,7 @@ import logging
 
 from config import get_settings
 from database import Base, build_engine
+import models  # noqa: F401  # Ensure SQLAlchemy models are registered before create_all().
 from schema_compat import ensure_schema_compatibility
 
 
