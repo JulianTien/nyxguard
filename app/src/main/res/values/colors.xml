@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- ========== NyxGuard 品牌色 ========== -->
+    <!-- Primary: 夜幕靛蓝 -->
+    <color name="ng_primary">#FF5B5FEF</color>
+    <color name="ng_primary_dark">#FF4246D7</color>
+    <color name="ng_primary_light">#FFB8BCFF</color>
+    <color name="ng_on_primary">#FFFFFFFF</color>
+    <color name="ng_primary_container">#FFE6E8FF</color>
+    <color name="ng_on_primary_container">#FF1E215E</color>
+
+    <!-- Secondary: 霓虹莓粉 -->
+    <color name="ng_secondary">#FFD95AA5</color>
+    <color name="ng_on_secondary">#FFFFFFFF</color>
+    <color name="ng_secondary_container">#FFFFDCEF</color>
+    <color name="ng_on_secondary_container">#FF4A0930</color>
+
+    <!-- Tertiary: 安心青绿 -->
+    <color name="ng_tertiary">#FF22B38F</color>
+    <color name="ng_on_tertiary">#FFFFFFFF</color>
+    <color name="ng_tertiary_container">#FFD8F8EF</color>
+    <color name="ng_on_tertiary_container">#FF0A3D32</color>
+
+    <!-- ========== Shell Tokens ========== -->
+    <color name="ng_shell_light_background">#FFF5F6FB</color>
+    <color name="ng_shell_light_surface">#FFFFFFFF</color>
+    <color name="ng_shell_light_surface_alt">#FFEEF1FA</color>
+    <color name="ng_shell_light_nav">#FFF0F2FC</color>
+    <color name="ng_shell_light_border">#FFD8DDF0</color>
+    <color name="ng_shell_light_text">#FF1B2140</color>
+    <color name="ng_shell_light_muted">#FF69708F</color>
+    <color name="ng_shell_light_success">#FF1EAE74</color>
+
+    <color name="ng_shell_dark_background">#FF0B1020</color>
+    <color name="ng_shell_dark_surface">#FF151C32</color>
+    <color name="ng_shell_dark_surface_alt">#FF1B2441</color>
+    <color name="ng_shell_dark_nav">#FF121A30</color>
+    <color name="ng_shell_dark_border">#FF2B3557</color>
+    <color name="ng_shell_dark_text">#FFF2F4FF</color>
+    <color name="ng_shell_dark_muted">#FFB2B8D1</color>
+    <color name="ng_shell_dark_success">#FF67E2AE</color>
+
+    <color name="ng_walk_gradient_start">#FF5B5FEF</color>
+    <color name="ng_walk_gradient_end">#FF8B63F6</color>
+    <color name="ng_quick_green_surface">#FFE4F7EE</color>
+    <color name="ng_quick_green_text">#FF157D54</color>
+    <color name="ng_quick_orange_surface">#FFFFEAD8</color>
+    <color name="ng_quick_orange_text">#FFB56313</color>
+    <color name="ng_glass_scrim_light">#CCFFFFFF</color>
+    <color name="ng_glass_scrim_dark">#CC11182C</color>
+
+    <!-- ========== 功能色 ========== -->
+    <!-- SOS 紧急红 -->
+    <color name="sos_emergency_red">#FFFF1744</color>
+    <color name="sos_emergency_red_surface">#FFFFDAD6</color>
+    <color name="sos_emergency_red_tonal">#FFFF5252</color>
+    <color name="sos_emergency_red_on_surface">#FF410002</color>
+
+    <!-- 安全绿 -->
+    <color name="sos_safety_green">#FF00C853</color>
+    <color name="sos_safety_green_surface">#FFC8FFC8</color>
+    <color name="sos_safety_green_tonal">#FF69F0AE</color>
+    <color name="sos_safety_green_on_surface">#FF002200</color>
+
+    <!-- 警告橙 -->
+    <color name="sos_warning_orange">#FFFF9100</color>
+    <color name="sos_warning_orange_surface">#FFFFF0D4</color>
+    <color name="sos_warning_orange_tonal">#FFFFAB40</color>
+    <color name="sos_warning_orange_on_surface">#FF2E1500</color>
+
+    <!-- ========== 功能卡片色 ========== -->
+    <color name="card_walk_bg">#FFE8EAFE</color>
+    <color name="card_walk_icon">#FF5B5FEF</color>
+    <color name="card_ride_bg">#FFFFF0D4</color>
+    <color name="card_ride_icon">#FFFF9100</color>
+    <color name="card_call_bg">#FFE4F7EE</color>
+    <color name="card_call_icon">#FF1EAE74</color>
+
+    <!-- ========== Mode Selection Colors ========== -->
+    <color name="mode_walk_primary">#FF5B5FEF</color>
+    <color name="mode_walk_surface">#FFE8EAFE</color>
+    <color name="mode_drive_primary">#FFFF9100</color>
+    <color name="mode_drive_surface">#FFFFF0D4</color>
+
+    <!-- ========== Material 3 Light ColorScheme ========== -->
+    <color name="md_theme_light_primary">#FF5B5FEF</color>
+    <color name="md_theme_light_onPrimary">@color/white</color>
+    <color name="md_theme_light_primaryContainer">#FFE6E8FF</color>
+    <color name="md_theme_light_onPrimaryContainer">#FF1E215E</color>
+    <color name="md_theme_light_secondary">#FFD95AA5</color>
+    <color name="md_theme_light_onSecondary">@color/white</color>
+    <color name="md_theme_light_secondaryContainer">#FFFFDCEF</color>
+    <color name="md_theme_light_onSecondaryContainer">#FF4A0930</color>
+    <color name="md_theme_light_tertiary">#FF22B38F</color>
+    <color name="md_theme_light_onTertiary">@color/white</color>
+    <color name="md_theme_light_tertiaryContainer">#FFD8F8EF</color>
+    <color name="md_theme_light_onTertiaryContainer">#FF0A3D32</color>
+    <color name="md_theme_light_error">#FFFF1744</color>
+    <color name="md_theme_light_onError">@color/white</color>
+    <color name="md_theme_light_errorContainer">#FFFFDAD6</color>
+    <color name="md_theme_light_onErrorContainer">#FF410002</color>
+    <color name="md_theme_light_background">#FFF5F6FB</color>
+    <color name="md_theme_light_onBackground">#FF1B2140</color>
+    <color name="md_theme_light_surface">#FFFFFFFF</color>
+    <color name="md_theme_light_onSurface">#FF1B2140</color>
+    <color name="md_theme_light_surfaceVariant">#FFEEF1FA</color>
+    <color name="md_theme_light_onSurfaceVariant">#FF69708F</color>
+    <color name="md_theme_light_outline">#FF8D95B0</color>
+    <color name="md_theme_light_outlineVariant">#FFD8DDF0</color>
+    <color name="md_theme_light_inverseSurface">#FF121A30</color>
+    <color name="md_theme_light_inverseOnSurface">#FFF2F4FF</color>
+    <color name="md_theme_light_inversePrimary">#FFB8BCFF</color>
+    <color name="md_theme_light_surfaceTint">#FF5B5FEF</color>
+
+    <!-- ========== Material 3 Dark ColorScheme ========== -->
+    <color name="md_theme_dark_primary">#FFC7CBFF</color>
+    <color name="md_theme_dark_onPrimary">#FF272E7A</color>
+    <color name="md_theme_dark_primaryContainer">#FF373EA8</color>
+    <color name="md_theme_dark_onPrimaryContainer">#FFE6E8FF</color>
+    <color name="md_theme_dark_secondary">#FFFFB5DD</color>
+    <color name="md_theme_dark_onSecondary">#FF632144</color>
+    <color name="md_theme_dark_secondaryContainer">#FF8E3762</color>
+    <color name="md_theme_dark_onSecondaryContainer">#FFFFDCEF</color>
+    <color name="md_theme_dark_tertiary">#FF67E2AE</color>
+    <color name="md_theme_dark_onTertiary">#FF083F33</color>
+    <color name="md_theme_dark_tertiaryContainer">#FF0F5D4B</color>
+    <color name="md_theme_dark_onTertiaryContainer">#FFD8F8EF</color>
+    <color name="md_theme_dark_error">#FFFFB4AB</color>
+    <color name="md_theme_dark_onError">#FF690005</color>
+    <color name="md_theme_dark_errorContainer">#FF93000A</color>
+    <color name="md_theme_dark_onErrorContainer">#FFFFDAD6</color>
+    <color name="md_theme_dark_background">#FF0B1020</color>
+    <color name="md_theme_dark_onBackground">#FFF2F4FF</color>
+    <color name="md_theme_dark_surface">#FF151C32</color>
+    <color name="md_theme_dark_onSurface">#FFF2F4FF</color>
+    <color name="md_theme_dark_surfaceVariant">#FF1B2441</color>
+    <color name="md_theme_dark_onSurfaceVariant">#FFB2B8D1</color>
+    <color name="md_theme_dark_outline">#FF7E88A8</color>
+    <color name="md_theme_dark_outlineVariant">#FF2B3557</color>
+    <color name="md_theme_dark_inverseSurface">#FFF3F5FF</color>
+    <color name="md_theme_dark_inverseOnSurface">#FF121A30</color>
+    <color name="md_theme_dark_inversePrimary">#FF5B5FEF</color>
+    <color name="md_theme_dark_surfaceTint">#FFC7CBFF</color>
+</resources>

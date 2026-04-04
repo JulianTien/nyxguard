@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="edge_chat_status">对话仅用于本地安全陪伴</string>
+    <string name="edge_chat_online">陪伴中</string>
+    <string name="edge_chat_intro_title">一路陪你</string>
+    <string name="edge_chat_intro_body">NyxGuard 会保持轻量陪伴，让你把注意力放在安全回家这件事上。</string>
+    <string name="edge_chat_input_voice">长按说话</string>
+
+    <string name="edge_profile_badge">已连续守护 %1$d 天</string>
+    <string name="edge_profile_badge_default">守护勋章</string>
+    <string name="edge_profile_theme_title">外观主题</string>
+    <string name="edge_profile_theme_summary">可选跟随系统、浅色或深色</string>
+    <string name="edge_profile_stats_routes">常用路线</string>
+    <string name="edge_profile_stats_hours">守护时长</string>
+    <string name="edge_profile_stats_guardians">守护者</string>
+    <string name="edge_profile_stats_placeholder_routes">3条</string>
+    <string name="edge_profile_stats_placeholder_hours">45小时</string>
+    <string name="edge_profile_theme_dialog_title">选择外观</string>
+    <string name="edge_theme_system">跟随系统</string>
+    <string name="edge_theme_light">浅色</string>
+    <string name="edge_theme_dark">深色</string>
+
+    <string name="edge_safe_chip_ready">已就绪</string>
+    <string name="edge_safe_loading">正在准备守护界面…</string>
+    <string name="edge_safe_tagline">为每一次夜路和回家途中提供安静但可靠的陪伴。</string>
+
+    <string name="edge_fake_call_preview">看起来像真实来电一样自然。</string>
+    <string name="edge_fake_call_quick_now">立即触发</string>
+    <string name="edge_fake_call_countdown">%1$s 后来电</string>
+
+    <string name="edge_alarm_title">警报模式</string>
+    <string name="edge_alarm_description">屏幕闪烁与震动已启动，确认安全后长按按钮关闭。</string>
+    <string name="edge_alarm_button">长按关闭警报</string>
+    <string name="edge_alarm_hold_hint">需按住 1 秒</string>
+    <string name="edge_call_mute">静音</string>
+    <string name="edge_call_keypad">键盘</string>
+    <string name="edge_call_speaker">免提</string>
+</resources>

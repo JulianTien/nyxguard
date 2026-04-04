@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="edge_chat_status">Protecting the conversation locally</string>
+    <string name="edge_chat_online">Companion online</string>
+    <string name="edge_chat_intro_title">Stay with me</string>
+    <string name="edge_chat_intro_body">NyxGuard keeps the chat lightweight so you can focus on getting home safely.</string>
+    <string name="edge_chat_input_voice">Hold to talk</string>
+
+    <string name="edge_profile_badge">%1$d day safety streak</string>
+    <string name="edge_profile_badge_default">Safety streak</string>
+    <string name="edge_profile_theme_title">Theme</string>
+    <string name="edge_profile_theme_summary">Choose system, light, or dark appearance</string>
+    <string name="edge_profile_stats_routes">Frequent routes</string>
+    <string name="edge_profile_stats_hours">Protected hours</string>
+    <string name="edge_profile_stats_guardians">Guardians</string>
+    <string name="edge_profile_stats_placeholder_routes">3 saved</string>
+    <string name="edge_profile_stats_placeholder_hours">45 hrs</string>
+    <string name="edge_profile_theme_dialog_title">Appearance</string>
+    <string name="edge_theme_system">Follow system</string>
+    <string name="edge_theme_light">Light</string>
+    <string name="edge_theme_dark">Dark</string>
+
+    <string name="edge_safe_chip_ready">Secured</string>
+    <string name="edge_safe_loading">Preparing your protection shell…</string>
+    <string name="edge_safe_tagline">Quiet support for every walk and ride home.</string>
+
+    <string name="edge_fake_call_preview">Looks and feels like a real incoming call.</string>
+    <string name="edge_fake_call_quick_now">Quick start</string>
+    <string name="edge_fake_call_countdown">Incoming in %1$s</string>
+
+    <string name="edge_alarm_title">Alarm Mode</string>
+    <string name="edge_alarm_description">Rapid flashes and vibration are active. Long press the button when you are safe.</string>
+    <string name="edge_alarm_button">Long press to stop</string>
+    <string name="edge_alarm_hold_hint">Hold for 1 second</string>
+    <string name="edge_call_mute">Mute</string>
+    <string name="edge_call_keypad">Keypad</string>
+    <string name="edge_call_speaker">Speaker</string>
+</resources>

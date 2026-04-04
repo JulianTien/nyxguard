@@ -1,0 +1,129 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Base.Theme.NyxGuard" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_light_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_light_onPrimaryContainer</item>
+        <item name="colorSecondary">@color/md_theme_light_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_light_onSecondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_light_secondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_light_onSecondaryContainer</item>
+        <item name="colorTertiary">@color/md_theme_light_tertiary</item>
+        <item name="colorOnTertiary">@color/md_theme_light_onTertiary</item>
+        <item name="colorTertiaryContainer">@color/md_theme_light_tertiaryContainer</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_light_onTertiaryContainer</item>
+        <item name="colorError">@color/md_theme_light_error</item>
+        <item name="colorOnError">@color/md_theme_light_onError</item>
+        <item name="colorErrorContainer">@color/md_theme_light_errorContainer</item>
+        <item name="colorOnErrorContainer">@color/md_theme_light_onErrorContainer</item>
+        <item name="android:colorBackground">@color/md_theme_light_background</item>
+        <item name="colorOnBackground">@color/md_theme_light_onBackground</item>
+        <item name="colorSurface">@color/md_theme_light_surface</item>
+        <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
+        <item name="colorSurfaceVariant">@color/md_theme_light_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_light_onSurfaceVariant</item>
+        <item name="colorOutline">@color/md_theme_light_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_light_outlineVariant</item>
+        <item name="android:windowBackground">@color/md_theme_light_background</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="materialCardViewStyle">@style/Widget.NyxGuard.SurfaceCard</item>
+        <!-- 统一圆角风格 -->
+        <item name="shapeAppearanceSmallComponent">@style/Shape.NyxGuard.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/Shape.NyxGuard.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/Shape.NyxGuard.Large</item>
+    </style>
+
+    <style name="Theme.NyxGuard" parent="Base.Theme.NyxGuard" />
+
+    <style name="Theme.NyxGuard.FullScreen" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- ========== 圆角系统 ========== -->
+    <style name="Shape.NyxGuard.Small" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">12dp</item>
+    </style>
+    <style name="Shape.NyxGuard.Medium" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerSize">16dp</item>
+    </style>
+    <style name="Shape.NyxGuard.Large" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerSize">24dp</item>
+    </style>
+
+    <!-- ========== SOS 按钮 ========== -->
+    <style name="Widget.NyxGuard.SOSButton" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/sos_emergency_red</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">100dp</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="iconSize">0dp</item>
+        <item name="elevation">12dp</item>
+    </style>
+
+    <!-- Material3 兼容别名：部分布局仍使用旧命名 -->
+    <style name="Widget.Material3.Button.FilledTonalButton" parent="Widget.Material3.Button.TonalButton" />
+
+    <!-- ========== 功能卡片 ========== -->
+    <style name="Widget.NyxGuard.ModeCard" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="rippleColor">?attr/colorPrimary</item>
+    </style>
+
+    <style name="Widget.NyxGuard.SurfaceCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">28dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">?attr/colorOutlineVariant</item>
+    </style>
+
+    <style name="Widget.NyxGuard.FloatingSheet" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">32dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">?attr/colorOutlineVariant</item>
+    </style>
+
+    <style name="Widget.NyxGuard.PillButton" parent="Widget.Material3.Button">
+        <item name="cornerRadius">20dp</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="iconGravity">textStart</item>
+    </style>
+
+    <style name="Widget.NyxGuard.ModeChip" parent="Widget.Material3.Chip.Filter">
+        <item name="chipIconVisible">true</item>
+        <item name="chipBackgroundColor">?attr/colorSurfaceVariant</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="chipCornerRadius">16dp</item>
+        <item name="ensureMinTouchTargetSize">true</item>
+        <item name="android:minHeight">48dp</item>
+    </style>
+
+    <!-- ========== 文字样式 ========== -->
+    <style name="TextAppearance.NyxGuard.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.02</item>
+    </style>
+
+    <style name="TextAppearance.NyxGuard.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.02</item>
+    </style>
+
+    <style name="TextAppearance.NyxGuard.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.NyxGuard.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textSize">12sp</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+</resources>

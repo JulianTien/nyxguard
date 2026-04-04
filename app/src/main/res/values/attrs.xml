@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="GradientBackgroundView">
+        <attr name="startColor" format="color" />
+        <attr name="centerColor" format="color" />
+        <attr name="endColor" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="GlassCardView">
+        <attr name="cornerRadius" format="dimension" />
+        <attr name="glassBackgroundColor" format="color" />
+        <attr name="glassBackgroundAlpha" format="integer" />
+    </declare-styleable>
+</resources>

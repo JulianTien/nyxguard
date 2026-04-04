@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="revamp_shell_bg">#FFF4F5FB</color>
+    <color name="revamp_shell_bg_dark">#FF0F1220</color>
+    <color name="revamp_surface_soft">#FFF7F8FD</color>
+    <color name="revamp_surface_dark">#FF171C2C</color>
+    <color name="revamp_indigo">#FF5865F2</color>
+    <color name="revamp_indigo_dark">#FF404CC8</color>
+    <color name="revamp_indigo_soft">#FFE8EBFF</color>
+    <color name="revamp_teal_soft">#FFE9FAF7</color>
+    <color name="revamp_orange_soft">#FFFFF1E3</color>
+    <color name="revamp_success">#FF21A67A</color>
+    <color name="revamp_warning">#FFEF8D32</color>
+    <color name="revamp_text_muted">#FF6E7489</color>
+    <color name="revamp_text_muted_dark">#FFADB3C6</color>
+    <color name="revamp_call_bg_top">#FF171C29</color>
+    <color name="revamp_call_bg_bottom">#FF0B0E16</color>
+</resources>

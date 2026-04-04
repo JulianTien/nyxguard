@@ -1,0 +1,260 @@
+<resources>
+    <string name="app_name">NyxGuard</string>
+
+    <!-- Login/Register -->
+    <string name="login_subtitle">守护你的每一次出行</string>
+    <string name="login_account_hint">手机号 / 邮箱</string>
+    <string name="login_password_hint">密码</string>
+    <string name="login_btn">登录</string>
+    <string name="login_register">没有账号？立即注册</string>
+    <string name="login_missing_credentials">请输入账号和密码</string>
+    <string name="register_title">创建账号</string>
+    <string name="register_nickname_hint">昵称</string>
+    <string name="register_phone_hint">手机号</string>
+    <string name="register_password_hint">密码</string>
+    <string name="register_password_rule">6-20位，需包含字母和数字</string>
+    <string name="register_btn">注册</string>
+    <string name="register_back_login">已有账号？返回登录</string>
+    <string name="register_nickname_required">请输入昵称</string>
+    <string name="register_phone_required">请输入手机号</string>
+    <string name="register_success">注册成功</string>
+
+    <!-- Status -->
+    <string name="status_title">状态</string>
+    <string name="status_icon_description">状态指示器</string>
+    <string name="status_initializing">初始化中…</string>
+    <string name="status_active">运行中</string>
+    <string name="status_inactive">未启用</string>
+
+    <!-- SOS -->
+    <string name="sos_button_text">SOS</string>
+    <string name="sos_button_description">紧急 SOS 按钮，长按启动</string>
+    <string name="sos_hint">长按启动紧急求助</string>
+    <string name="countdown_dialog_description">SOS 紧急倒计时弹窗</string>
+    <string name="countdown_title">SOS Alert</string>
+    <string name="countdown_title_description">SOS 标题</string>
+    <string name="countdown_timer_description">倒计时</string>
+    <string name="countdown_message">紧急提醒将在以下时间后发送</string>
+    <string name="countdown_message_description">倒计时说明</string>
+    <string name="countdown_cancel_description">取消 SOS 提醒</string>
+
+    <!-- Mode Selection -->
+    <string name="mode_selection_title">出行模式</string>
+    <string name="mode_selection_description">选择你的出行模式</string>
+    <string name="mode_walk">步行</string>
+    <string name="mode_walk_description">步行模式</string>
+    <string name="mode_drive">乘车</string>
+    <string name="mode_drive_description">乘车模式</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">首页</string>
+    <string name="nav_map">地图</string>
+    <string name="nav_chat">AI陪伴</string>
+    <string name="nav_profile">我的</string>
+
+    <!-- Home Fragment -->
+    <string name="greeting_morning">早上好</string>
+    <string name="greeting_afternoon">下午好</string>
+    <string name="greeting_evening">晚上好，注意安全哦</string>
+    <string name="greeting_subtitle">NyxGuard 守护你的每一次出行</string>
+    <string name="home_feature_title">安全守护</string>
+    <string name="card_walk_title">步行守护</string>
+    <string name="card_walk_desc">实时追踪、偏离预警、超时提醒</string>
+    <string name="card_ride_title">乘车守护</string>
+    <string name="card_ride_desc">车辆信息记录、路线监控、一键求助</string>
+    <string name="card_fake_call_title">模拟来电</string>
+    <string name="card_fake_call_desc">自定义来电人、延时、通话音频</string>
+    <string name="arrow_right">进入</string>
+
+    <!-- Map Fragment -->
+    <string name="btn_my_location">回到我的位置</string>
+    <string name="map_not_supported">当前设备不支持地图显示</string>
+    <string name="map_not_supported_hint">请在真机上使用地图功能</string>
+    <string name="map_location_permission_required">需要定位权限才能显示当前位置</string>
+    <string name="map_init_failed">地图初始化失败</string>
+
+    <!-- Walk Setting -->
+    <string name="walk_setting_title">步行设置</string>
+    <string name="walk_start_label">起点</string>
+    <string name="walk_dest_label">终点</string>
+    <string name="walk_dest_hint">搜索目的地</string>
+    <string name="walk_locating">正在定位…</string>
+    <string name="walk_locate_failed">定位失败，请检查权限</string>
+    <string name="walk_route_info">路线信息</string>
+    <string name="walk_start_trip">开始行程</string>
+    <string name="walk_current_location">当前位置</string>
+    <string name="route_planning_failed">路线规划失败</string>
+    <string name="route_distance_km">距离: %1$.1f 公里</string>
+    <string name="route_distance_meters">距离: %1$d 米</string>
+    <string name="route_duration_minutes">预计用时: %1$d 分钟</string>
+    <string name="marker_start">起点</string>
+    <string name="marker_destination">终点</string>
+    <string name="guardian_trip_section_title">本次行程的守护者</string>
+    <string name="guardian_trip_section_hint">开始前请至少选择 1 名守护者，他们会和这次行程绑定，并收到你的安全更新。</string>
+    <string name="guardian_trip_none_selected">尚未选择守护者</string>
+    <string name="guardian_trip_selected_summary">已选: %1$s</string>
+    <string name="guardian_trip_choose">选择守护者</string>
+    <string name="guardian_trip_manage">管理守护者</string>
+    <string name="guardian_trip_empty_hint">你还没有守护者，请先去“守护者管理”添加一位。</string>
+    <string name="guardian_trip_load_failed">守护者加载失败，请重试。</string>
+    <string name="guardian_trip_need_selection">开始行程前请至少选择 1 名守护者。</string>
+    <string name="guardian_trip_dialog_title">选择守护者</string>
+    <string name="guardian_trip_dialog_confirm">确定</string>
+
+    <!-- Ride Setting -->
+    <string name="ride_setting_title">乘车设置</string>
+    <string name="ride_vehicle_info">车辆信息</string>
+    <string name="ride_plate_hint">车牌号（如 京A12345）</string>
+    <string name="ride_vehicle_type">车辆类型</string>
+    <string name="ride_vehicle_color">车辆颜色</string>
+    <string name="ride_remark_hint">备注（如 滴滴快车）</string>
+    <string name="ride_trip_setting">行程设置</string>
+    <string name="ride_dest_hint">搜索目的地</string>
+    <string name="ride_start_trip">开始乘车守护</string>
+    <string name="ride_tracking_status">乘车守护中</string>
+    <string name="ride_guardian_empty_hint">你还没有守护者，请先去“守护者管理”添加一位。</string>
+
+    <!-- Tracking -->
+    <string name="walk_tracking_status">步行守护中</string>
+    <string name="walk_remaining_distance">剩余距离</string>
+    <string name="walk_estimated_arrival">预计到达</string>
+    <string name="walk_end_trip">结束行程</string>
+    <string name="distance_km">%1$.1f 公里</string>
+    <string name="distance_meters">%1$d 米</string>
+    <string name="trip_end_title">结束行程</string>
+    <string name="dialog_end">结束</string>
+    <string name="dialog_continue">继续</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="trip_finished_safe">行程已结束，注意安全！</string>
+    <string name="walk_notification_text">正在守护你的步行行程</string>
+    <string name="ride_notification_text">乘车守护中 · %1$s</string>
+    <string name="walk_mock_stopped">模拟步行已停止</string>
+    <string name="walk_mock_insufficient_points">路线点不足，无法模拟</string>
+    <string name="walk_mock_started">模拟步行已启动（3秒/步）</string>
+    <string name="ride_mock_stopped">模拟乘车已停止</string>
+    <string name="ride_mock_started">模拟乘车已启动（2秒/步）</string>
+    <string name="walk_arrival_title">已到达目的地</string>
+    <string name="walk_arrival_message">你已安全到达%1$s，确认结束行程？</string>
+    <string name="walk_arrival_confirm">确认到达</string>
+    <string name="walk_arrival_not_yet">还没到</string>
+    <string name="walk_deviation_title">路线偏离提醒</string>
+    <string name="walk_deviation_message">你已偏离规划路线超过200米，是否安全？</string>
+    <string name="walk_deviation_safe">换了条路，没事</string>
+    <string name="walk_need_help">需要帮助</string>
+    <string name="walk_timeout_title">行程超时提醒</string>
+    <string name="walk_timeout_message">你已超过预计到达时间，是否安全？</string>
+    <string name="walk_timeout_extend">没事，延长15分钟</string>
+    <string name="walk_sos_sent">SOS 求助已发送！定位频率已提升至3秒</string>
+    <string name="walk_end_message">确认结束当前步行行程？</string>
+    <string name="ride_deviation_title">路线偏离警告</string>
+    <string name="ride_deviation_message">车辆已偏离预定路线超过500米！</string>
+    <string name="ride_deviation_safe">司机换了条路，没事</string>
+    <string name="ride_deviation_unsafe">我感到不安全</string>
+    <string name="ride_sos_sent">SOS 求助已发送！车牌: %1$s\n定位频率已提升至3秒</string>
+    <string name="ride_end_message">确认结束当前乘车行程？</string>
+
+    <!-- Fake Call -->
+    <string name="fake_call_setting_title">模拟来电</string>
+    <string name="fake_call_caller_info">来电人信息</string>
+    <string name="fake_call_name_hint">来电人姓名</string>
+    <string name="fake_call_phone_hint">显示号码</string>
+    <string name="fake_call_delay_title">延时设置</string>
+    <string name="fake_call_delay_now">立即</string>
+    <string name="fake_call_delay_10s">10秒后</string>
+    <string name="fake_call_delay_30s">30秒后</string>
+    <string name="fake_call_delay_1m">1分钟后</string>
+    <string name="fake_call_delay_5m">5分钟后</string>
+    <string name="fake_call_start">开始模拟来电</string>
+    <string name="fake_call_cancel">取消</string>
+    <string name="fake_call_incoming">来电中…</string>
+    <string name="fake_call_answer">接听</string>
+    <string name="fake_call_reject">拒绝</string>
+    <string name="fake_call_hangup">挂断</string>
+    <string name="fake_call_name_required">请输入来电人姓名</string>
+    <string name="fake_call_sample_name">妈妈</string>
+    <string name="fake_call_sample_phone">138****8888</string>
+    <string name="unknown_caller">未知</string>
+
+    <!-- Chat -->
+    <string name="chat_title">AI 陪伴</string>
+    <string name="chat_input_hint">输入消息…</string>
+    <string name="chat_send">发送</string>
+
+    <!-- Profile -->
+    <string name="profile_default_name">NyxGuard 用户</string>
+    <string name="profile_default_phone">未登录</string>
+    <string name="profile_phone_not_set">未设置手机号</string>
+    <string name="profile_not_set">未设置</string>
+    <string name="profile_guardian_count">%1$d人</string>
+    <string name="profile_menu_guardians">守护者管理</string>
+    <string name="profile_menu_fake_call">模拟来电设置</string>
+    <string name="profile_menu_language">语言</string>
+    <string name="profile_menu_about">关于 NyxGuard</string>
+    <string name="profile_version">NyxGuard v1.0</string>
+    <string name="profile_about_title">关于 NyxGuard</string>
+    <string name="profile_about_message">NyxGuard — 女生夜归安全守护APP\n\nTechnovation Girls 参赛作品\nVersion 1.0</string>
+    <string name="profile_about_positive">好的</string>
+    <string name="language_dialog_title">应用语言</string>
+    <string name="language_option_english">English</string>
+    <string name="language_option_chinese">简体中文</string>
+
+    <!-- Guardian -->
+    <string name="guardian_title">守护者管理</string>
+    <string name="guardian_subtitle">最多添加5名守护者，行程中他们会收到你的安全状态通知</string>
+    <string name="guardian_empty">还没有守护者\n点击下方按钮添加</string>
+    <string name="guardian_add">添加守护者</string>
+    <string name="guardian_name_hint">姓名</string>
+    <string name="guardian_phone_hint">电话号码</string>
+    <string name="guardian_relationship_hint">关系</string>
+    <string name="guardian_limit_reached">最多添加5名守护者</string>
+    <string name="guardian_add_title">添加守护者</string>
+    <string name="guardian_add_action">添加</string>
+    <string name="guardian_default_relationship">朋友</string>
+    <string name="guardian_fill_required">请填写姓名和电话</string>
+    <string name="guardian_delete_title">删除守护者</string>
+    <string name="guardian_delete_message">确认删除 %1$s？</string>
+    <string name="guardian_delete_action">删除</string>
+
+    <!-- Notifications -->
+    <string name="tracking_notification_default">正在守护你的行程</string>
+    <string name="tracking_channel_name">行程守护</string>
+    <string name="tracking_channel_description">实时位置追踪守护</string>
+    <string name="tracking_notification_title">NyxGuard 守护中</string>
+
+    <!-- API -->
+    <string name="api_request_failed">请求失败</string>
+    <string name="api_server_error">服务器错误: %1$d</string>
+    <string name="api_network_error">网络连接失败: %1$s</string>
+
+    <!-- Accessibility -->
+    <string name="contact_avatar_description">联系人头像</string>
+    <string name="contact_name_description">联系人姓名</string>
+    <string name="contact_relationship_description">联系人关系</string>
+
+    <string-array name="ride_vehicle_type_options">
+        <item>轿车</item>
+        <item>SUV</item>
+        <item>面包车</item>
+        <item>其他</item>
+    </string-array>
+
+    <string-array name="ride_vehicle_color_options">
+        <item>白色</item>
+        <item>黑色</item>
+        <item>银色</item>
+        <item>红色</item>
+        <item>蓝色</item>
+        <item>其他</item>
+    </string-array>
+
+    <string-array name="guardian_relationship_options">
+        <item>父亲</item>
+        <item>母亲</item>
+        <item>兄弟</item>
+        <item>姐妹</item>
+        <item>朋友</item>
+        <item>室友</item>
+        <item>伴侣</item>
+        <item>其他</item>
+    </string-array>
+</resources>

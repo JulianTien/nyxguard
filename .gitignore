@@ -1,0 +1,43 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.idea/
+.kotlin/
+.claude/
+PLANS.md
+.vercel/
+
+# Android
+app/build/
+
+# Python backend
+backend/.env
+backend/.env.local
+backend/.env.preview
+backend/.env.production
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/*.db
+backend/*.sqlite3
+
+# Python generic
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/

@@ -1,0 +1,277 @@
+<resources>
+    <string name="app_name">NyxGuard</string>
+
+    <!-- Login/Register -->
+    <string name="login_subtitle">Protecting every trip you take</string>
+    <string name="login_account_hint">Phone / Email</string>
+    <string name="login_password_hint">Password</string>
+    <string name="login_btn">Log in</string>
+    <string name="login_register">No account yet? Sign up</string>
+    <string name="login_missing_credentials">Please enter your account and password</string>
+    <string name="register_title">Create Account</string>
+    <string name="register_nickname_hint">Nickname</string>
+    <string name="register_phone_hint">Phone number</string>
+    <string name="register_password_hint">Password</string>
+    <string name="register_password_rule">6-20 characters, must include letters and numbers</string>
+    <string name="register_btn">Sign up</string>
+    <string name="register_back_login">Already have an account? Back to login</string>
+    <string name="register_nickname_required">Please enter a nickname</string>
+    <string name="register_phone_required">Please enter a phone number</string>
+    <string name="register_success">Registration successful</string>
+
+    <!-- Status -->
+    <string name="status_title">Status</string>
+    <string name="status_icon_description">Status indicator</string>
+    <string name="status_initializing">Initializing…</string>
+    <string name="status_active">Active</string>
+    <string name="status_inactive">Inactive</string>
+
+    <!-- SOS -->
+    <string name="sos_button_text">SOS</string>
+    <string name="sos_button_description">Emergency SOS button, long press to activate</string>
+    <string name="sos_hint">Long press to activate an emergency alert</string>
+    <string name="countdown_dialog_description">SOS emergency countdown dialog</string>
+    <string name="countdown_title">SOS Alert</string>
+    <string name="countdown_title_description">SOS alert title</string>
+    <string name="countdown_timer_description">Countdown timer</string>
+    <string name="countdown_message">Emergency alert will be sent in</string>
+    <string name="countdown_message_description">Countdown message</string>
+    <string name="countdown_cancel_description">Cancel SOS alert</string>
+
+    <!-- Mode Selection -->
+    <string name="mode_selection_title">Travel Mode</string>
+    <string name="mode_selection_description">Select your travel mode</string>
+    <string name="mode_walk">Walk</string>
+    <string name="mode_walk_description">Walking mode</string>
+    <string name="mode_drive">Ride</string>
+    <string name="mode_drive_description">Ride mode</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_map">Map</string>
+    <string name="nav_chat">AI Care</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Home Fragment -->
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_evening">Good evening, stay safe</string>
+    <string name="greeting_subtitle">NyxGuard watches over every trip you take</string>
+    <string name="home_feature_title">Safety Features</string>
+    <string name="card_walk_title">Walk Guard</string>
+    <string name="card_walk_desc">Live tracking, route deviation alerts, and overtime reminders</string>
+    <string name="card_ride_title">Ride Guard</string>
+    <string name="card_ride_desc">Vehicle logging, route monitoring, and one-tap emergency help</string>
+    <string name="card_fake_call_title">Fake Call</string>
+    <string name="card_fake_call_desc">Customize caller, delay, and call audio</string>
+    <string name="arrow_right">Open</string>
+
+    <!-- Map Fragment -->
+    <string name="btn_my_location">Back to my location</string>
+    <string name="map_not_supported">This device does not support map rendering</string>
+    <string name="map_not_supported_hint">Please use a real device for map features</string>
+    <string name="map_location_permission_required">Location permission is required to show your position</string>
+    <string name="map_init_failed">Couldn\'t initialize the map</string>
+
+    <!-- Walk Setting -->
+    <string name="walk_setting_title">Walk Setup</string>
+    <string name="walk_start_label">Start</string>
+    <string name="walk_dest_label">Destination</string>
+    <string name="walk_dest_hint">Search destination</string>
+    <string name="walk_locating">Locating…</string>
+    <string name="walk_locate_failed">Location failed, please check permissions</string>
+    <string name="walk_route_info">Route details</string>
+    <string name="walk_start_trip">Start trip</string>
+    <string name="walk_current_location">Current location</string>
+    <string name="route_planning_failed">Couldn\'t plan the route</string>
+    <string name="route_distance_km">Distance: %1$.1f km</string>
+    <string name="route_distance_meters">Distance: %1$d m</string>
+    <string name="route_duration_minutes">ETA: %1$d min</string>
+    <string name="marker_start">Start</string>
+    <string name="marker_destination">Destination</string>
+    <string name="guardian_trip_section_title">Guardians for this trip</string>
+    <string name="guardian_trip_section_hint">Choose at least one guardian before starting. They will be linked to this trip and receive safety updates.</string>
+    <string name="guardian_trip_none_selected">No guardians selected yet</string>
+    <string name="guardian_trip_selected_summary">Selected: %1$s</string>
+    <string name="guardian_trip_choose">Choose guardians</string>
+    <string name="guardian_trip_manage">Manage guardians</string>
+    <string name="guardian_trip_empty_hint">You have no guardians yet. Please add one in Guardian Management first.</string>
+    <string name="guardian_trip_load_failed">Couldn\'t load guardians. Please try again.</string>
+    <string name="guardian_trip_need_selection">Please choose at least one guardian before starting the trip.</string>
+    <string name="guardian_trip_dialog_title">Select guardians</string>
+    <string name="guardian_trip_dialog_confirm">Confirm</string>
+
+    <!-- Ride Setting -->
+    <string name="ride_setting_title">Ride Setup</string>
+    <string name="ride_vehicle_info">Vehicle details</string>
+    <string name="ride_plate_hint">Plate number (e.g. A12345)</string>
+    <string name="ride_vehicle_type">Vehicle type</string>
+    <string name="ride_vehicle_color">Vehicle color</string>
+    <string name="ride_remark_hint">Remark (e.g. rideshare)</string>
+    <string name="ride_trip_setting">Trip settings</string>
+    <string name="ride_dest_hint">Search destination</string>
+    <string name="ride_start_trip">Start ride guard</string>
+    <string name="ride_tracking_status">Ride protection active</string>
+    <string name="ride_guardian_empty_hint">You have no guardians yet. Please add one in Guardian Management first.</string>
+
+    <!-- Tracking -->
+    <string name="walk_tracking_status">Walk protection active</string>
+    <string name="walk_remaining_distance">Remaining distance</string>
+    <string name="walk_estimated_arrival">Estimated arrival</string>
+    <string name="walk_end_trip">End trip</string>
+    <string name="distance_km">%1$.1f km</string>
+    <string name="distance_meters">%1$d m</string>
+    <string name="trip_end_title">End trip</string>
+    <string name="dialog_end">End</string>
+    <string name="dialog_continue">Continue</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="trip_finished_safe">Trip ended. Stay safe!</string>
+    <string name="walk_notification_text">Protecting your walk</string>
+    <string name="ride_notification_text">Ride protection · %1$s</string>
+    <string name="walk_mock_stopped">Mock walk stopped</string>
+    <string name="walk_mock_insufficient_points">Not enough route points to simulate</string>
+    <string name="walk_mock_started">Mock walk started (3 sec / step)</string>
+    <string name="ride_mock_stopped">Mock ride stopped</string>
+    <string name="ride_mock_started">Mock ride started (2 sec / step)</string>
+    <string name="walk_arrival_title">You\'ve arrived</string>
+    <string name="walk_arrival_message">You arrived safely at %1$s. End the trip?</string>
+    <string name="walk_arrival_confirm">Confirm arrival</string>
+    <string name="walk_arrival_not_yet">Not yet</string>
+    <string name="walk_deviation_title">Route deviation alert</string>
+    <string name="walk_deviation_message">You are more than 200 meters off the planned route. Are you safe?</string>
+    <string name="walk_deviation_safe">I\'m safe</string>
+    <string name="walk_need_help">Need help</string>
+    <string name="walk_timeout_title">Trip delay reminder</string>
+    <string name="walk_timeout_message">You are past the expected arrival time. Are you safe?</string>
+    <string name="walk_timeout_extend">I\'m okay, add 15 minutes</string>
+    <string name="walk_sos_sent">SOS sent. Location updates are now every 3 seconds.</string>
+    <string name="walk_end_message">End the current walking trip?</string>
+    <string name="ride_deviation_title">Route deviation alert</string>
+    <string name="ride_deviation_message">The vehicle is more than 500 meters off the planned route!</string>
+    <string name="ride_deviation_safe">Driver changed the route, it\'s okay</string>
+    <string name="ride_deviation_unsafe">I feel unsafe</string>
+    <string name="ride_sos_sent">SOS sent. Plate: %1$s\nLocation updates are now every 3 seconds.</string>
+    <string name="ride_end_message">End the current ride trip?</string>
+
+    <!-- Fake Call -->
+    <string name="fake_call_setting_title">Fake Call</string>
+    <string name="fake_call_caller_info">Caller details</string>
+    <string name="fake_call_name_hint">Caller name</string>
+    <string name="fake_call_phone_hint">Displayed number</string>
+    <string name="fake_call_delay_title">Delay</string>
+    <string name="fake_call_delay_now">Now</string>
+    <string name="fake_call_delay_10s">In 10 sec</string>
+    <string name="fake_call_delay_30s">In 30 sec</string>
+    <string name="fake_call_delay_1m">In 1 min</string>
+    <string name="fake_call_delay_5m">In 5 min</string>
+    <string name="fake_call_start">Start fake call</string>
+    <string name="fake_call_cancel">Cancel</string>
+    <string name="fake_call_incoming">Incoming call…</string>
+    <string name="fake_call_answer">Answer</string>
+    <string name="fake_call_reject">Decline</string>
+    <string name="fake_call_hangup">Hang up</string>
+    <string name="fake_call_name_required">Please enter a caller name</string>
+    <string name="fake_call_sample_name">Mom</string>
+    <string name="fake_call_sample_phone">555-0108</string>
+    <string name="unknown_caller">Unknown</string>
+
+    <!-- Chat -->
+    <string name="chat_title">AI Companion</string>
+    <string name="chat_input_hint">Type a message…</string>
+    <string name="chat_send">Send</string>
+
+    <!-- Profile -->
+    <string name="profile_default_name">NyxGuard User</string>
+    <string name="profile_default_phone">Not signed in</string>
+    <string name="profile_phone_not_set">Phone number not set</string>
+    <string name="profile_emergency_phone_not_set">Emergency contact not set</string>
+    <string name="profile_not_set">Not set</string>
+    <string name="profile_guardian_count">%1$d guardians</string>
+    <string name="profile_account_meta_default">Joined: -- · Updated: --</string>
+    <string name="profile_account_meta">Joined: %1$s · Updated: %2$s</string>
+    <string name="profile_edit_profile">Edit profile</string>
+    <string name="profile_edit_title">Edit profile</string>
+    <string name="profile_edit_nickname_hint">Nickname</string>
+    <string name="profile_edit_emergency_hint">Emergency contact</string>
+    <string name="profile_edit_save">Save</string>
+    <string name="profile_edit_success">Profile updated</string>
+    <string name="profile_edit_nickname_required">Please enter a nickname</string>
+    <string name="profile_avatar_description">Profile avatar</string>
+    <string name="profile_created_at">Joined: %1$s</string>
+    <string name="profile_updated_at">Updated: %1$s</string>
+    <string name="profile_menu_guardians">Guardians</string>
+    <string name="profile_menu_fake_call">Fake call settings</string>
+    <string name="profile_menu_language">Language</string>
+    <string name="profile_menu_about">About NyxGuard</string>
+    <string name="profile_menu_logout">Log out</string>
+    <string name="profile_logout_title">Log out</string>
+    <string name="profile_logout_message">Are you sure you want to log out?</string>
+    <string name="profile_logout_confirm">Log out</string>
+    <string name="profile_version">NyxGuard v1.0</string>
+    <string name="profile_about_title">About NyxGuard</string>
+    <string name="profile_about_message">NyxGuard - a personal safety app for women traveling at night.\n\nTechnovation Girls project entry\nVersion 1.0</string>
+    <string name="profile_about_positive">OK</string>
+    <string name="language_dialog_title">App language</string>
+    <string name="language_option_english">English</string>
+    <string name="language_option_chinese">简体中文</string>
+
+    <!-- Guardian -->
+    <string name="guardian_title">Guardians</string>
+    <string name="guardian_subtitle">Add up to 5 guardians. They will receive your safety updates during trips.</string>
+    <string name="guardian_empty">No guardians yet\nTap the button below to add one</string>
+    <string name="guardian_add">Add guardian</string>
+    <string name="guardian_name_hint">Name</string>
+    <string name="guardian_phone_hint">Phone number</string>
+    <string name="guardian_relationship_hint">Relationship</string>
+    <string name="guardian_limit_reached">You can add up to 5 guardians</string>
+    <string name="guardian_add_title">Add guardian</string>
+    <string name="guardian_add_action">Add</string>
+    <string name="guardian_default_relationship">Friend</string>
+    <string name="guardian_fill_required">Please enter a name and phone number</string>
+    <string name="guardian_delete_title">Delete guardian</string>
+    <string name="guardian_delete_message">Delete %1$s?</string>
+    <string name="guardian_delete_action">Delete</string>
+
+    <!-- Notifications -->
+    <string name="tracking_notification_default">Protecting your trip</string>
+    <string name="tracking_channel_name">Trip protection</string>
+    <string name="tracking_channel_description">Real-time location protection</string>
+    <string name="tracking_notification_title">NyxGuard protecting you</string>
+
+    <!-- API -->
+    <string name="api_request_failed">Request failed</string>
+    <string name="api_server_error">Server error: %1$d</string>
+    <string name="api_network_error">Network connection failed: %1$s</string>
+
+    <!-- Accessibility -->
+    <string name="contact_avatar_description">Contact avatar</string>
+    <string name="contact_name_description">Contact name</string>
+    <string name="contact_relationship_description">Contact relationship</string>
+
+    <string-array name="ride_vehicle_type_options">
+        <item>Sedan</item>
+        <item>SUV</item>
+        <item>Van</item>
+        <item>Other</item>
+    </string-array>
+
+    <string-array name="ride_vehicle_color_options">
+        <item>White</item>
+        <item>Black</item>
+        <item>Silver</item>
+        <item>Red</item>
+        <item>Blue</item>
+        <item>Other</item>
+    </string-array>
+
+    <string-array name="guardian_relationship_options">
+        <item>Father</item>
+        <item>Mother</item>
+        <item>Brother</item>
+        <item>Sister</item>
+        <item>Friend</item>
+        <item>Roommate</item>
+        <item>Partner</item>
+        <item>Other</item>
+    </string-array>
+</resources>

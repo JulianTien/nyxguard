@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_revamp_call">
+
+    <TextView
+        android:id="@+id/caller_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="84dp"
+        android:textColor="@color/white"
+        android:textSize="34sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/caller_phone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="#AAFFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/caller_name" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/fake_call_network"
+        android:textColor="#88FFFFFF"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/caller_phone" />
+
+    <ImageView
+        android:id="@+id/avatar"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginTop="48dp"
+        android:background="@drawable/bg_avatar_circle"
+        android:padding="28dp"
+        android:src="@drawable/ic_nav_profile"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/caller_phone"
+        app:tint="@color/white" />
+
+    <FrameLayout
+        android:id="@+id/btn_reject"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_marginBottom="120dp"
+        android:background="@drawable/bg_call_reject"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_answer"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:rotation="135"
+            android:src="@drawable/ic_call_answer" />
+
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/fake_call_reject"
+        android:textColor="#AAFFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintEnd_toEndOf="@id/btn_reject"
+        app:layout_constraintStart_toStartOf="@id/btn_reject"
+        app:layout_constraintTop_toBottomOf="@id/btn_reject" />
+
+    <FrameLayout
+        android:id="@+id/btn_answer"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_marginBottom="120dp"
+        android:background="@drawable/bg_call_answer"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btn_reject">
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_call_answer" />
+
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/fake_call_answer"
+        android:textColor="#AAFFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintEnd_toEndOf="@id/btn_answer"
+        app:layout_constraintStart_toStartOf="@id/btn_answer"
+        app:layout_constraintTop_toBottomOf="@id/btn_answer" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
