@@ -41,6 +41,20 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
     openai_model: str = "gpt-4o-mini"
     openai_base_url: str = "https://api.openai.com/v1"
+    s3_bucket_name: Optional[str] = None
+    s3_region: Optional[str] = None
+    s3_access_key_id: Optional[str] = None
+    s3_secret_access_key: Optional[str] = None
+    s3_session_token: Optional[str] = None
+    s3_endpoint_url: Optional[str] = None
+    s3_public_base_url: Optional[str] = None
+    sos_local_media_dir: str = str(BASE_DIR / "sos_media")
+    sos_upload_token_ttl_seconds: int = 900
+    watchdog_timeout_grace_minutes: int = 5
+    watchdog_location_loss_walk_seconds: int = 90
+    watchdog_location_loss_ride_seconds: int = 45
+    watchdog_alert_dedup_seconds: int = 60
+    sos_duplicate_window_seconds: int = 20
 
     @model_validator(mode="after")
     def validate_runtime_contract(self) -> "Settings":
@@ -73,6 +87,14 @@ class Settings(BaseSettings):
     @property
     def should_auto_bootstrap_schema(self) -> bool:
         return self.app_env == "development" and self.runtime_database_url.startswith("sqlite")
+
+    @property
+    def has_s3_media_storage(self) -> bool:
+        return bool(self.s3_bucket_name and self.s3_region)
+
+    @property
+    def storage_mode(self) -> str:
+        return "s3" if self.has_s3_media_storage else "local"
 
 
 @lru_cache

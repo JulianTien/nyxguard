@@ -7,6 +7,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
 
@@ -25,6 +26,18 @@ interface ApiService {
     @DELETE("api/guardians/{id}")
     fun deleteGuardian(@Path("id") id: Int): Call<MessageResponse>
 
+    @POST("api/guardian-links/invite")
+    fun inviteGuardianLink(@Body body: GuardianLinkInviteRequest): Call<GuardianLinkDto>
+
+    @POST("api/guardian-links/{id}/accept")
+    fun acceptGuardianLink(@Path("id") id: Int): Call<GuardianLinkDto>
+
+    @GET("api/guardian-links")
+    fun getGuardianLinks(): Call<List<GuardianLinkDto>>
+
+    @DELETE("api/guardian-links/{id}")
+    fun revokeGuardianLink(@Path("id") id: Int): Call<MessageResponse>
+
     @POST("api/trips")
     fun createTrip(@Body body: CreateTripRequest): Call<TripSummaryResponse>
 
@@ -40,6 +53,12 @@ interface ApiService {
     @POST("api/trips/{id}/sos")
     fun triggerSOS(@Path("id") id: Int, @Body body: SosRequest): Call<SosResponse>
 
+    @POST("api/v2/sos/media/presign")
+    fun createSosMediaPresign(@Body body: SosMediaPresignRequest): Call<SosMediaPresignResponse>
+
+    @POST("api/v2/sos/media/commit")
+    fun commitSosMedia(@Body body: SosMediaCommitRequest): Call<SosMediaCommitResponse>
+
     @POST("api/chat")
     fun chat(@Body body: ChatRequest): Call<ChatResponse>
 
@@ -48,6 +67,15 @@ interface ApiService {
 
     @GET("api/v2/dashboard")
     fun getDashboard(): Call<DashboardResponseDto>
+
+    @GET("api/v2/guardian/dashboard")
+    fun getGuardianDashboard(): Call<GuardianDashboardDto>
+
+    @GET("api/v2/guardian/trips/{id}")
+    fun getGuardianTripDetail(@Path("id") id: Int): Call<GuardianTripDetailDto>
+
+    @GET("api/v2/guardian/sos/{id}")
+    fun getGuardianSosDetail(@Path("id") id: Int): Call<GuardianSosDetailDto>
 
     @GET("api/v2/trips/current")
     fun getCurrentTrip(): Call<CurrentTripDto>
@@ -62,7 +90,7 @@ interface ApiService {
     fun getProfileSummary(): Call<ProfileSummaryDto>
 
     @GET("api/v2/chat/messages")
-    fun getChatMessages(@retrofit2.http.Query("trip_id") tripId: Int? = null): Call<ChatHistoryDto>
+    fun getChatMessages(@Query("trip_id") tripId: Int? = null): Call<ChatHistoryDto>
 
     @POST("api/v2/chat/messages")
     fun createChatMessage(@Body body: V2ChatMessageRequest): Call<V2ChatMessageResponseDto>
@@ -72,4 +100,16 @@ interface ApiService {
 
     @POST("api/v2/sos")
     fun triggerGlobalSos(@Body body: V2SosRequest): Call<V2SosResponseDto>
+
+    @GET("api/notifications/events")
+    fun getNotificationEvents(@Query("trip_id") tripId: Int? = null): Call<List<NotificationEventDto>>
+
+    @POST("api/notifications/push")
+    fun pushNotification(@Body body: NotificationPushRequest): Call<NotificationEventDto>
+
+    @POST("api/push-tokens/register")
+    fun registerPushToken(@Body body: PushTokenRegisterRequest): Call<PushTokenResponse>
+
+    @POST("api/push-tokens/deregister")
+    fun deregisterPushToken(@Body body: PushTokenDeregisterRequest): Call<MessageResponse>
 }

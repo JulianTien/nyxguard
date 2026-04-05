@@ -2,16 +2,17 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_chat_page">
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/header_card"
         style="@style/Widget.NyxGuard.RevampCard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="20dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="16dp"
         app:cardBackgroundColor="?attr/colorSurface"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -22,26 +23,18 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="16dp">
+            android:padding="14dp">
 
-            <FrameLayout
-                android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:background="@drawable/bg_revamp_primary_card">
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@drawable/ic_ai_girl_avatar" />
 
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_nav_chat"
-                    app:tint="@color/white" />
-            </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
                 android:orientation="vertical">
 
                 <TextView
@@ -50,17 +43,20 @@
                     android:layout_height="wrap_content"
                     android:text="@string/chat_title"
                     android:textColor="?attr/colorOnSurface"
-                    android:textSize="16sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/chat_subtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_chat_status_chip"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
                     android:text="@string/chat_status_online"
                     android:textColor="@color/revamp_success"
-                    android:textSize="12sp" />
+                    android:textSize="11sp" />
 
             </LinearLayout>
 
@@ -73,7 +69,11 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingTop="12dp"
+        android:layout_marginTop="8dp"
+        android:overScrollMode="never"
+        android:paddingStart="4dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="4dp"
         android:paddingBottom="12dp"
         app:layout_constraintBottom_toTopOf="@id/input_panel"
         app:layout_constraintEnd_toEndOf="parent"
@@ -85,9 +85,9 @@
         style="@style/Widget.NyxGuard.RevampCard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="96dp"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginBottom="90dp"
         app:cardBackgroundColor="?attr/colorSurface"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -97,7 +97,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="14dp">
+            android:padding="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -107,23 +107,24 @@
 
                 <ImageButton
                     android:id="@+id/btn_mic"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_revamp_nav_active"
-                    android:contentDescription="@string/chat_send"
-                    android:padding="10dp"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="@drawable/bg_chat_input_round_button"
+                    android:contentDescription="@string/chat_voice_placeholder_short"
+                    android:padding="11dp"
                     android:src="@drawable/ic_phone"
                     app:tint="@color/revamp_indigo" />
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/input_message"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="10dp"
+                    android:layout_height="46dp"
+                    android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_chat_input"
                     android:gravity="center_vertical"
                     android:hint="@string/chat_voice_placeholder"
+                    android:textColorHint="@color/revamp_text_muted"
                     android:imeOptions="actionSend"
                     android:inputType="text"
                     android:maxLines="1"
@@ -132,25 +133,31 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_send"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="10dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="@string/chat_send"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
-                    android:text=">"
+                    android:minWidth="44dp"
+                    android:minHeight="44dp"
+                    android:text=""
                     app:backgroundTint="@color/revamp_indigo"
-                    app:cornerRadius="24dp" />
+                    app:cornerRadius="22dp"
+                    app:icon="@drawable/ic_send_warm"
+                    app:iconPadding="0dp"
+                    app:iconTint="@color/white" />
 
             </LinearLayout>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="8dp"
                 android:gravity="center"
                 android:text="@string/chat_privacy_notice"
                 android:textColor="@color/revamp_text_muted"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
 
         </LinearLayout>
 

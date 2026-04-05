@@ -167,6 +167,9 @@ class V2ApiTestCase(unittest.TestCase):
         )
         self.assertEqual(pushed.status_code, 200, pushed.text)
         self.assertEqual(pushed.json()["event_type"], "manual_push")
+        self.assertIn("delivery_status", pushed.json())
+        self.assertIn("delivery_channel", pushed.json())
+        self.assertIn(pushed.json()["delivery_status"], {"queued", "sent", "skipped", "failed", "opened"})
 
         summary = self.client.get("/api/v2/profile/summary", headers=self.auth_header(token))
         self.assertEqual(summary.status_code, 200, summary.text)
@@ -190,6 +193,77 @@ class V2ApiTestCase(unittest.TestCase):
         )
         self.assertEqual(standalone_sos.status_code, 200, standalone_sos.text)
         self.assertIsNone(standalone_sos.json()["linked_trip_id"])
+
+    def test_push_token_lifecycle_and_open_receipt(self) -> None:
+        auth = self.register_user("13")
+        token = auth["token"]
+
+        register_response = self.client.post(
+            "/api/notifications/tokens",
+            headers=self.auth_header(token),
+            json={
+                "token": "fcm-test-token-13",
+                "platform": "android",
+                "device_name": "Pixel Test",
+                "app_version": "1.0.0",
+            },
+        )
+        self.assertEqual(register_response.status_code, 200, register_response.text)
+        self.assertTrue(register_response.json()["enabled"])
+        self.assertEqual(register_response.json()["token"], "fcm-test-token-13")
+
+        compat_register_response = self.client.post(
+            "/api/push-tokens/register",
+            headers=self.auth_header(token),
+            json={"token": "fcm-compat-token-13", "platform": "android"},
+        )
+        self.assertEqual(compat_register_response.status_code, 200, compat_register_response.text)
+        self.assertEqual(compat_register_response.json()["status"], "registered")
+
+        push_response = self.client.post(
+            "/api/notifications/push",
+            headers=self.auth_header(token),
+            json={
+                "event_type": "manual_push",
+                "title": "测试推送",
+                "body": "这是一条推送状态机测试",
+                "payload": {"source": "unit-test"},
+            },
+        )
+        self.assertEqual(push_response.status_code, 200, push_response.text)
+        push_json = push_response.json()
+        self.assertIn(push_json["delivery_status"], {"skipped", "failed", "sent", "opened"})
+        self.assertEqual(push_json["delivery_channel"], "fcm")
+
+        events_response = self.client.get("/api/notifications/events", headers=self.auth_header(token))
+        self.assertEqual(events_response.status_code, 200, events_response.text)
+        events_json = events_response.json()
+        self.assertGreaterEqual(len(events_json), 1)
+        self.assertIn("delivery_status", events_json[0])
+        self.assertIn("attempt_count", events_json[0])
+
+        opened_response = self.client.post(
+            f"/api/notifications/events/{push_json['id']}/opened",
+            headers=self.auth_header(token),
+        )
+        self.assertEqual(opened_response.status_code, 200, opened_response.text)
+        self.assertEqual(opened_response.json()["delivery_status"], "opened")
+        self.assertIsNotNone(opened_response.json()["opened_at"])
+
+        delete_response = self.client.delete(
+            "/api/notifications/tokens",
+            headers=self.auth_header(token),
+            params={"token": "fcm-test-token-13"},
+        )
+        self.assertEqual(delete_response.status_code, 200, delete_response.text)
+
+        compat_delete_response = self.client.post(
+            "/api/push-tokens/deregister",
+            headers=self.auth_header(token),
+            json={"token": "fcm-compat-token-13"},
+        )
+        self.assertEqual(compat_delete_response.status_code, 200, compat_delete_response.text)
+        self.assertIn("停用", delete_response.json()["message"])
 
     def test_cannot_delete_last_guardian(self) -> None:
         auth = self.register_user("12")

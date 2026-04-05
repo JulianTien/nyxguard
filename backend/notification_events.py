@@ -83,7 +83,9 @@ def create_notification_event(
     title: str,
     body: str,
     payload: Optional[dict[str, Any]] = None,
-    status: str = "recorded",
+    status: str = "queued",
+    delivery_channel: str = "fcm",
+    delivery_status: str = "queued",
 ) -> NotificationEvent:
     event = NotificationEvent(
         user_id=user_id,
@@ -94,10 +96,34 @@ def create_notification_event(
         body=body,
         payload_json=serialize_payload(payload),
         status=status,
+        delivery_channel=delivery_channel,
+        delivery_status=delivery_status,
+        attempt_count=0,
     )
     db.add(event)
     db.flush()
     return event
+
+
+def notification_event_to_dict(event: NotificationEvent) -> dict[str, Any]:
+    return {
+        "id": event.id,
+        "event_type": event.event_type,
+        "title": event.title,
+        "body": event.body,
+        "payload": deserialize_payload(event.payload_json),
+        "status": event.status,
+        "delivery_channel": event.delivery_channel,
+        "delivery_status": event.delivery_status,
+        "attempt_count": event.attempt_count,
+        "delivered_at": event.delivered_at,
+        "opened_at": event.opened_at,
+        "failure_reason": event.failure_reason,
+        "user_id": event.user_id,
+        "trip_id": event.trip_id,
+        "guardian_id": event.guardian_id,
+        "created_at": event.created_at,
+    }
 
 
 def emit_trip_guardian_events(

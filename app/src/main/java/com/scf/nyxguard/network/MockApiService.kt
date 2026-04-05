@@ -54,6 +54,83 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
         return delegate.returningResponse(MessageResponse("删除成功")).deleteGuardian(id)
     }
 
+    override fun inviteGuardianLink(body: GuardianLinkInviteRequest): Call<GuardianLinkDto> {
+        val traveler = GuardianLinkUserDto(
+            id = 1001,
+            nickname = "测试用户",
+            phone = "13900001111"
+        )
+        val guardian = GuardianLinkUserDto(
+            id = body.guardian_user_id ?: 2001,
+            nickname = "守护者",
+            phone = body.guardian_phone ?: body.guardian_account
+        )
+        val link = GuardianLinkDto(
+            id = (100..999).random(),
+            traveler_user = traveler,
+            guardian_user = guardian,
+            relationship = body.relationship,
+            status = "pending",
+            invited_at = java.time.Instant.now().toString(),
+            current_role = "traveler"
+        )
+        return delegate.returningResponse(link).inviteGuardianLink(body)
+    }
+
+    override fun acceptGuardianLink(id: Int): Call<GuardianLinkDto> {
+        val traveler = GuardianLinkUserDto(
+            id = 1001,
+            nickname = "测试用户",
+            phone = "13900001111"
+        )
+        val guardian = GuardianLinkUserDto(
+            id = 2001,
+            nickname = "守护者",
+            phone = "138****1234"
+        )
+        val link = GuardianLinkDto(
+            id = id,
+            traveler_user = traveler,
+            guardian_user = guardian,
+            relationship = "朋友",
+            status = "accepted",
+            invited_at = java.time.Instant.now().minusSeconds(600).toString(),
+            accepted_at = java.time.Instant.now().toString(),
+            current_role = "guardian"
+        )
+        return delegate.returningResponse(link).acceptGuardianLink(id)
+    }
+
+    override fun getGuardianLinks(): Call<List<GuardianLinkDto>> {
+        val traveler = GuardianLinkUserDto(
+            id = 1001,
+            nickname = "测试用户",
+            phone = "13900001111"
+        )
+        val guardian = GuardianLinkUserDto(
+            id = 2001,
+            nickname = "妈妈",
+            phone = "138****1234"
+        )
+        val response = listOf(
+            GuardianLinkDto(
+                id = 1,
+                traveler_user = traveler,
+                guardian_user = guardian,
+                relationship = "母亲",
+                status = "accepted",
+                invited_at = java.time.Instant.now().minusSeconds(86_400).toString(),
+                accepted_at = java.time.Instant.now().minusSeconds(43_200).toString(),
+                current_role = "traveler"
+            )
+        )
+        return delegate.returningResponse(response).getGuardianLinks()
+    }
+
+    override fun revokeGuardianLink(id: Int): Call<MessageResponse> {
+        return delegate.returningResponse(MessageResponse("解绑成功")).revokeGuardianLink(id)
+    }
+
     override fun createTrip(body: CreateTripRequest): Call<TripSummaryResponse> {
         val response = TripSummaryResponse(
             id = (1000..9999).random(),
@@ -97,9 +174,40 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
         val response = SosResponse(
             status = "emergency",
             sos_id = (1000..9999).random(),
-            message = "SOS已触发"
+            message = "SOS已触发",
+            media_key = body.media_key ?: "s3://nyxguard/mock/$id",
+            audio_url = body.audio_url
         )
         return delegate.returningResponse(response).triggerSOS(id, body)
+    }
+
+    override fun createSosMediaPresign(body: SosMediaPresignRequest): Call<SosMediaPresignResponse> {
+        val response = SosMediaPresignResponse(
+            media_key = "mock-media-${(1000..9999).random()}",
+            upload_url = "https://mock-upload.nyxguard.com/presigned/${(1000..9999).random()}",
+            upload_method = "PUT",
+            upload_headers = mapOf("Content-Type" to body.content_type),
+            playback_url = "https://mock-storage.nyxguard.com/audio/${(1000..9999).random()}.m4a",
+            audio_url = "https://mock-storage.nyxguard.com/audio/${(1000..9999).random()}.m4a",
+            storage_mode = "s3",
+            bucket = "mock-nyxguard",
+            expires_in_seconds = 900
+        )
+        return delegate.returningResponse(response).createSosMediaPresign(body)
+    }
+
+    override fun commitSosMedia(body: SosMediaCommitRequest): Call<SosMediaCommitResponse> {
+        val response = SosMediaCommitResponse(
+            media_key = body.media_key,
+            audio_url = "https://mock-storage.nyxguard.com/audio/${body.media_key}.m4a",
+            playback_url = "https://mock-storage.nyxguard.com/audio/${body.media_key}.m4a",
+            storage_mode = "s3",
+            bucket = "mock-nyxguard",
+            content_type = body.content_type ?: "audio/m4a",
+            size_bytes = body.size_bytes,
+            message = "SOS媒体已准备就绪"
+        )
+        return delegate.returningResponse(response).commitSosMedia(body)
     }
 
     override fun chat(body: ChatRequest): Call<ChatResponse> {
@@ -135,6 +243,48 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
         return delegate.returningResponse(response).getDashboard()
     }
 
+    override fun getGuardianDashboard(): Call<GuardianDashboardDto> {
+        val response = GuardianDashboardDto(
+            guardian_user_id = 2001,
+            guardian_nickname = "妈妈",
+            greeting = "晚上好，正在守护 2 位用户",
+            protected_users = listOf(
+                GuardianProtectedTravelerDto(
+                    traveler_user_id = 1001,
+                    traveler_nickname = "测试用户",
+                    guardian_link_id = 1,
+                    relationship = "母亲",
+                    active_trip = ActiveTripBriefDto(
+                        id = 2001,
+                        mode = "walk",
+                        status = "active",
+                        destination = "星光国际公寓南门",
+                        eta_minutes = 12,
+                        guardian_count = 2
+                    ),
+                    last_location = LocationPointDto(
+                        lat = 31.2298,
+                        lng = 121.4742,
+                        recorded_at = java.time.Instant.now().toString()
+                    ),
+                    last_event = GuardianEventDto(
+                        id = 5001,
+                        event_type = "walk_deviation",
+                        title = "步行偏离提醒",
+                        body = "测试用户的步行路线已偏离，请关注",
+                        status = "sent",
+                        created_at = java.time.Instant.now().minusSeconds(60).toString(),
+                        trip_id = 2001,
+                        guardian_id = 1
+                    )
+                )
+            ),
+            active_trip_count = 1,
+            pending_alert_count = 1
+        )
+        return delegate.returningResponse(response).getGuardianDashboard()
+    }
+
     override fun getCurrentTrip(): Call<CurrentTripDto> {
         val response = CurrentTripDto(
             id = 2001,
@@ -155,6 +305,73 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
         return delegate.returningResponse(response).getCurrentTrip()
     }
 
+    override fun getGuardianTripDetail(id: Int): Call<GuardianTripDetailDto> {
+        val response = GuardianTripDetailDto(
+            trip_id = id,
+            traveler_user_id = 1001,
+            traveler_nickname = "测试用户",
+            mode = "walk",
+            status = "active",
+            destination = "星光国际公寓南门",
+            eta_minutes = 12,
+            guardian_count = 2,
+            latest_location = LocationPointDto(
+                lat = 31.2298,
+                lng = 121.4742,
+                recorded_at = java.time.Instant.now().toString()
+            ),
+            route_preview = listOf(
+                LocationPointDto(lat = 31.2304, lng = 121.4737, recorded_at = java.time.Instant.now().minusSeconds(120).toString()),
+                LocationPointDto(lat = 31.2298, lng = 121.4742, recorded_at = java.time.Instant.now().toString()),
+            ),
+            recent_events = listOf(
+                GuardianEventDto(
+                    id = 5001,
+                    event_type = "walk_deviation",
+                    title = "步行偏离提醒",
+                    body = "测试用户的步行路线已偏离，请关注",
+                    status = "sent",
+                    created_at = java.time.Instant.now().minusSeconds(60).toString(),
+                    trip_id = id,
+                    guardian_id = 1
+                )
+            ),
+            sos_state = "idle",
+            expected_arrive_at = java.time.Instant.now().plusSeconds(720).toString()
+        )
+        return delegate.returningResponse(response).getGuardianTripDetail(id)
+    }
+
+    override fun getGuardianSosDetail(id: Int): Call<GuardianSosDetailDto> {
+        val response = GuardianSosDetailDto(
+            sos_id = id,
+            traveler_user_id = 1001,
+            traveler_nickname = "测试用户",
+            trip_id = 2001,
+            mode = "walk",
+            status = "active",
+            created_at = java.time.Instant.now().minusSeconds(30).toString(),
+            lat = 31.2298,
+            lng = 121.4742,
+            media_key = "mock-media-$id",
+            audio_url = "https://mock-storage.nyxguard.com/audio/mock-media-$id.m4a",
+            playback_url = "https://mock-storage.nyxguard.com/audio/mock-media-$id.m4a",
+            recent_events = listOf(
+                GuardianEventDto(
+                    id = 5002,
+                    event_type = "sos_triggered",
+                    title = "SOS已触发",
+                    body = "测试用户已触发SOS，正在发送实时位置与行程信息",
+                    status = "sent",
+                    created_at = java.time.Instant.now().minusSeconds(10).toString(),
+                    trip_id = 2001,
+                    guardian_id = 1
+                )
+            )
+        )
+        return delegate.returningResponse(response).getGuardianSosDetail(id)
+    }
+
     override fun createTripAlert(id: Int, body: TripAlertRequest): Call<TripAlertResponseDto> {
         val proactive = when (body.alert_type) {
             "walk_timeout" -> "你好像比预计晚了一些，还顺利吗？需要帮助吗？"
@@ -169,6 +386,52 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
             message_id = (1000..9999).random()
         )
         return delegate.returningResponse(response).createTripAlert(id, body)
+    }
+
+    override fun getNotificationEvents(tripId: Int?): Call<List<NotificationEventDto>> {
+        val response = listOf(
+            NotificationEventDto(
+                id = 7001,
+                event_type = "trip_started",
+                title = "行程已开始",
+                body = "测试用户已开始步行守护",
+                payload = mapOf("trip_id" to 2001, "channel" to "fcm"),
+                status = "delivered",
+                delivery_channel = "fcm",
+                delivery_status = "delivered",
+                attempt_count = 1,
+                delivered_at = java.time.Instant.now().toString(),
+                opened_at = null,
+                failure_reason = null,
+                user_id = 1001,
+                trip_id = tripId ?: 2001,
+                guardian_id = 1,
+                created_at = java.time.Instant.now().minusSeconds(120).toString()
+            )
+        )
+        return delegate.returningResponse(response).getNotificationEvents(tripId)
+    }
+
+    override fun pushNotification(body: NotificationPushRequest): Call<NotificationEventDto> {
+        val response = NotificationEventDto(
+            id = (7000..7999).random(),
+            event_type = body.event_type,
+            title = body.title,
+            body = body.body,
+            payload = body.payload,
+            status = body.status,
+            delivery_channel = body.delivery_channel ?: "manual",
+            delivery_status = body.delivery_status ?: "queued",
+            attempt_count = body.attempt_count,
+            delivered_at = body.delivered_at,
+            opened_at = body.opened_at,
+            failure_reason = body.failure_reason,
+            user_id = 1001,
+            trip_id = body.trip_id,
+            guardian_id = body.guardian_id,
+            created_at = java.time.Instant.now().toString()
+        )
+        return delegate.returningResponse(response).pushNotification(body)
     }
 
     override fun getProfileSummary(): Call<ProfileSummaryDto> {
@@ -223,8 +486,23 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
             sos_id = (1000..9999).random(),
             linked_trip_id = body.trip_id,
             guardian_count = 2,
-            message = "SOS求助已记录"
+            message = "SOS求助已记录",
+            media_key = body.media_key ?: "s3://nyxguard/mock/${body.trip_id ?: 0}",
+            audio_url = body.audio_url
         )
         return delegate.returningResponse(response).triggerGlobalSos(body)
+    }
+
+    override fun registerPushToken(body: PushTokenRegisterRequest): Call<PushTokenResponse> {
+        val response = PushTokenResponse(
+            token = body.token,
+            status = "registered",
+            registered = true
+        )
+        return delegate.returningResponse(response).registerPushToken(body)
+    }
+
+    override fun deregisterPushToken(body: PushTokenDeregisterRequest): Call<MessageResponse> {
+        return delegate.returningResponse(MessageResponse("注销成功")).deregisterPushToken(body)
     }
 }

@@ -133,6 +133,10 @@ dependencies {
     
     // Glide图片加载
     implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    // Firebase Cloud Messaging（无 google-services 配置时会自动降级为空操作）
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    implementation("com.google.firebase:firebase-messaging")
     
     // Gson
     implementation("com.google.code.gson:gson:2.10.1")

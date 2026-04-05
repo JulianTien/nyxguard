@@ -2,6 +2,7 @@ package com.scf.nyxguard.network
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.scf.nyxguard.util.PushTokenSyncManager
 
 object TokenManager {
 
@@ -30,6 +31,7 @@ object TokenManager {
     fun isLoggedIn(context: Context): Boolean = getToken(context) != null
 
     fun logout(context: Context) {
+        PushTokenSyncManager.onLogout(context)
         prefs(context).edit().clear().apply()
     }
 }

@@ -4,31 +4,54 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from ai_guardian import PROACTIVE_MESSAGES, generate_guardian_reply
 from database import get_db
 from deps import get_current_user
-from models import ChatMessage, Guardian, Location, SOSEvent, Trip, TripGuardian, User
+from models import ChatMessage, Guardian, GuardianLink, Location, NotificationEvent, SOSEvent, Trip, TripGuardian, User
 from notification_events import create_notification_event, guardian_snapshot, trip_snapshot
+from services.sos_media import (
+    ResolvedMediaReference,
+    build_presign_result,
+    commit_media_reference,
+    extract_media_key,
+    load_media_bytes,
+    resolve_media_reference,
+    store_local_media,
+)
+from services.watchdog import (
+    find_recent_duplicate_sos,
+    maybe_emit_guardian_alert,
+)
 from schemas import (
+    ActiveTripBriefRead,
     ChatHistoryResponse,
     ChatMessageCreateRequest,
     ChatMessageRead,
     CurrentTripResponse,
     DashboardResponse,
     ErrorResponse,
+    GuardianDashboardResponse,
+    GuardianEventRead,
+    GuardianProtectedTravelerRead,
+    GuardianSosDetailResponse,
+    GuardianTripDetailResponse,
     LocationPointRead,
     ProfileSummaryResponse,
     ProactiveChatRequest,
+    SosMediaCommitRequest,
+    SosMediaCommitResponse,
+    SosMediaPresignRequest,
+    SosMediaPresignResponse,
+    SosMediaUploadResponse,
     TripAlertRequest,
     TripAlertResponse,
     V2ChatMessageResponse,
     V2SosRequest,
     V2SosResponse,
     VehicleInfoRead,
-    ActiveTripBriefRead,
 )
 
 
@@ -70,34 +93,59 @@ def get_trip_guardians(db: Session, trip_id: int, user_id: int) -> list[Guardian
     )
 
 
-def find_recent_duplicate_sos(
+def get_guardian_links_for_guardian(db: Session, guardian_user_id: int) -> list[GuardianLink]:
+    return (
+        db.query(GuardianLink)
+        .filter(
+            GuardianLink.guardian_user_id == guardian_user_id,
+            GuardianLink.status == "accepted",
+        )
+        .order_by(GuardianLink.id.desc())
+        .all()
+    )
+
+
+def get_recent_guardian_events(
     db: Session,
     *,
-    user_id: int,
-    trip_id: Optional[int],
-    lat: float,
-    lng: float,
-    audio_url: Optional[str],
-    within_seconds: int = 20,
-) -> Optional[SOSEvent]:
-    cutoff = now_utc() - timedelta(seconds=within_seconds)
-    query = (
-        db.query(SOSEvent)
-        .filter(
-            SOSEvent.user_id == user_id,
-            SOSEvent.status == "active",
-            SOSEvent.created_at >= cutoff,
-        )
-        .order_by(SOSEvent.created_at.desc(), SOSEvent.id.desc())
-    )
-    query = query.filter(SOSEvent.trip_id.is_(None)) if trip_id is None else query.filter(SOSEvent.trip_id == trip_id)
-    candidate = query.first()
-    if candidate is None:
-        return None
+    traveler_user_id: int,
+    guardian_id: Optional[int] = None,
+    trip_id: Optional[int] = None,
+    limit: int = 20,
+) -> list[NotificationEvent]:
+    query = db.query(NotificationEvent).filter(NotificationEvent.user_id == traveler_user_id)
+    if guardian_id is not None:
+        query = query.filter(NotificationEvent.guardian_id == guardian_id)
+    if trip_id is not None:
+        query = query.filter(NotificationEvent.trip_id == trip_id)
+    return query.order_by(NotificationEvent.created_at.desc(), NotificationEvent.id.desc()).limit(limit).all()
 
-    same_location = abs(candidate.lat - lat) <= 0.00001 and abs(candidate.lng - lng) <= 0.00001
-    same_audio = candidate.audio_url == audio_url or not candidate.audio_url or not audio_url
-    return candidate if same_location and same_audio else None
+
+def to_guardian_event_read(event: NotificationEvent) -> GuardianEventRead:
+    return GuardianEventRead(
+        id=event.id,
+        event_type=event.event_type,
+        title=event.title,
+        body=event.body,
+        status=event.status,
+        created_at=event.created_at,
+        trip_id=event.trip_id,
+        guardian_id=event.guardian_id,
+    )
+
+
+def ensure_guardian_has_access_to_trip(db: Session, guardian_user_id: int, trip: Trip) -> None:
+    allowed = (
+        db.query(GuardianLink)
+        .filter(
+            GuardianLink.traveler_user_id == trip.user_id,
+            GuardianLink.guardian_user_id == guardian_user_id,
+            GuardianLink.status == "accepted",
+        )
+        .first()
+    )
+    if allowed is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权查看该行程")
 
 
 def get_guardian_summary(guardians: list[Guardian]) -> str:
@@ -159,6 +207,135 @@ def create_proactive_chat_message(
     return message
 
 
+@router.post(
+    "/sos/media/presign",
+    response_model=SosMediaPresignResponse,
+    responses={401: {"model": ErrorResponse}},
+)
+def presign_sos_media(
+    payload: SosMediaPresignRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SosMediaPresignResponse:
+    if payload.trip_id is not None:
+        trip = db.query(Trip).filter(Trip.id == payload.trip_id, Trip.user_id == current_user.id).first()
+        if trip is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="行程不存在")
+
+    result = build_presign_result(
+        base_url=str(request.base_url),
+        user_id=current_user.id,
+        trip_id=payload.trip_id,
+        filename=payload.filename,
+        content_type=payload.content_type,
+        size_bytes=payload.size_bytes,
+    )
+    return SosMediaPresignResponse(
+        media_key=result.media_key,
+        upload_url=result.upload_url,
+        upload_method=result.upload_method,
+        upload_headers=result.upload_headers,
+        playback_url=result.playback_url,
+        audio_url=result.audio_url,
+        storage_mode=result.storage_mode,
+        bucket=result.bucket,
+        expires_in_seconds=result.expires_in_seconds,
+    )
+
+
+@router.post(
+    "/sos/media/commit",
+    response_model=SosMediaCommitResponse,
+    responses={401: {"model": ErrorResponse}},
+)
+def commit_sos_media(
+    payload: SosMediaCommitRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SosMediaCommitResponse:
+    if payload.trip_id is not None:
+        trip = db.query(Trip).filter(Trip.id == payload.trip_id, Trip.user_id == current_user.id).first()
+        if trip is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="行程不存在")
+    media_key = (payload.media_key or "").strip()
+    if not media_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="media_key不能为空")
+    result = commit_media_reference(
+        base_url=str(request.base_url),
+        media_key=media_key,
+        content_type=payload.content_type,
+        size_bytes=payload.size_bytes,
+    )
+    return SosMediaCommitResponse(
+        media_key=result.media_key,
+        audio_url=result.audio_url,
+        playback_url=result.playback_url,
+        storage_mode=result.storage_mode,
+        bucket=result.bucket,
+        content_type=result.content_type,
+        size_bytes=result.size_bytes,
+        message="SOS媒体已准备就绪",
+    )
+
+
+@router.put(
+    "/sos/media/{media_key}",
+    response_model=SosMediaUploadResponse,
+    responses={400: {"model": ErrorResponse}},
+)
+def upload_sos_media(
+    media_key: str,
+    request: Request,
+    body: bytes = Body(..., media_type="application/octet-stream"),
+    upload_token: str = "",
+) -> SosMediaUploadResponse:
+    if not upload_token:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="upload_token不能为空")
+    result = store_local_media(
+        media_key=media_key,
+        upload_token=upload_token,
+        body=body,
+        content_type=request.headers.get("content-type") if request is not None else None,
+        base_url=str(request.base_url) if request is not None else "",
+    )
+    return SosMediaUploadResponse(
+        media_key=result.media_key,
+        stored_bytes=result.stored_bytes,
+        audio_url=result.audio_url,
+        message=result.message,
+    )
+
+
+@router.get(
+    "/sos/media/{media_key}",
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def get_sos_media(
+    media_key: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    allowed = (
+        db.query(SOSEvent)
+        .join(Trip, Trip.id == SOSEvent.trip_id, isouter=True)
+        .filter(
+            SOSEvent.audio_media_key == media_key,
+        )
+        .filter(
+            (SOSEvent.user_id == current_user.id)
+            | (Trip.user_id == current_user.id)
+        )
+        .first()
+    )
+    if allowed is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SOS媒体不存在")
+
+    body, content_type, _ = load_media_bytes(media_key)
+    return Response(content=body, media_type=content_type or "application/octet-stream")
+
+
 @router.get(
     "/dashboard",
     response_model=DashboardResponse,
@@ -190,6 +367,217 @@ def get_dashboard(
             "fake_call": {"available": True},
             "alarm": {"available": True},
         },
+    )
+
+
+@router.get(
+    "/guardian/dashboard",
+    response_model=GuardianDashboardResponse,
+    responses={401: {"model": ErrorResponse}},
+)
+def get_guardian_dashboard(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> GuardianDashboardResponse:
+    links = get_guardian_links_for_guardian(db, current_user.id)
+    protected_users: list[GuardianProtectedTravelerRead] = []
+    active_trip_count = 0
+    pending_alert_count = 0
+
+    for link in links:
+        traveler_user = db.get(User, link.traveler_user_id)
+        if traveler_user is None:
+            continue
+
+        active_trip = (
+            db.query(Trip)
+            .filter(
+                Trip.user_id == traveler_user.id,
+                Trip.status.in_(("active", "emergency")),
+            )
+            .order_by(Trip.created_at.desc(), Trip.id.desc())
+            .first()
+        )
+        active_trip_brief = None
+        last_location = None
+        if active_trip is not None:
+            active_trip_count += 1
+            pending_alert_count += 1 if active_trip.status == "emergency" else 0
+            active_trip_brief = ActiveTripBriefRead(
+                id=active_trip.id,
+                mode=active_trip.trip_type,
+                status=active_trip.status,
+                destination=active_trip.end_name,
+                eta_minutes=compute_eta_minutes(active_trip),
+                guardian_count=len(get_trip_guardians(db, active_trip.id, traveler_user.id)),
+            )
+            latest_location = (
+                db.query(Location)
+                .filter(Location.trip_id == active_trip.id)
+                .order_by(Location.recorded_at.desc(), Location.id.desc())
+                .first()
+            )
+            if latest_location is not None:
+                last_location = LocationPointRead(
+                    lat=latest_location.lat,
+                    lng=latest_location.lng,
+                    recorded_at=latest_location.recorded_at,
+                )
+
+        recent_events = get_recent_guardian_events(
+            db,
+            traveler_user_id=traveler_user.id,
+            trip_id=active_trip.id if active_trip is not None else None,
+            limit=1,
+        )
+        last_event = to_guardian_event_read(recent_events[0]) if recent_events else None
+        if last_event is not None and last_event.status != "opened":
+            pending_alert_count += 1
+
+        protected_users.append(
+            GuardianProtectedTravelerRead(
+                traveler_user_id=traveler_user.id,
+                traveler_nickname=traveler_user.nickname,
+                guardian_link_id=link.id,
+                relationship=link.relationship,
+                active_trip=active_trip_brief,
+                last_location=last_location,
+                last_event=last_event,
+            )
+        )
+
+    return GuardianDashboardResponse(
+        guardian_user_id=current_user.id,
+        guardian_nickname=current_user.nickname,
+        greeting=build_greeting(),
+        protected_users=protected_users,
+        active_trip_count=active_trip_count,
+        pending_alert_count=pending_alert_count,
+        updated_at=now_utc(),
+    )
+
+
+@router.get(
+    "/guardian/trips/{trip_id}",
+    response_model=GuardianTripDetailResponse,
+    responses={401: {"model": ErrorResponse}, 403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def get_guardian_trip_detail(
+    trip_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> GuardianTripDetailResponse:
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if trip is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="行程不存在")
+    ensure_guardian_has_access_to_trip(db, current_user.id, trip)
+
+    traveler_user = db.get(User, trip.user_id)
+    if traveler_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="行程用户不存在")
+
+    latest_location = (
+        db.query(Location)
+        .filter(Location.trip_id == trip.id)
+        .order_by(Location.recorded_at.desc(), Location.id.desc())
+        .first()
+    )
+    preview_points = (
+        db.query(Location)
+        .filter(Location.trip_id == trip.id)
+        .order_by(Location.recorded_at.desc(), Location.id.desc())
+        .limit(20)
+        .all()
+    )
+    preview_points.reverse()
+    latest_sos = (
+        db.query(SOSEvent)
+        .filter(SOSEvent.user_id == trip.user_id, SOSEvent.trip_id == trip.id)
+        .order_by(SOSEvent.created_at.desc(), SOSEvent.id.desc())
+        .first()
+    )
+    events = get_recent_guardian_events(db, traveler_user_id=trip.user_id, trip_id=trip.id, limit=30)
+
+    return GuardianTripDetailResponse(
+        trip_id=trip.id,
+        traveler_user_id=traveler_user.id,
+        traveler_nickname=traveler_user.nickname,
+        mode=trip.trip_type,
+        status=trip.status,
+        destination=trip.end_name,
+        eta_minutes=compute_eta_minutes(trip),
+        guardian_count=len(get_trip_guardians(db, trip.id, trip.user_id)),
+        latest_location=LocationPointRead(
+            lat=latest_location.lat,
+            lng=latest_location.lng,
+            recorded_at=latest_location.recorded_at,
+        ) if latest_location is not None else None,
+        route_preview=[
+            LocationPointRead(lat=item.lat, lng=item.lng, recorded_at=item.recorded_at)
+            for item in preview_points
+        ],
+        recent_events=[to_guardian_event_read(event) for event in events],
+        sos_state=latest_sos.status if latest_sos is not None else "idle",
+        expected_arrive_at=trip.expected_arrive_at,
+    )
+
+
+@router.get(
+    "/guardian/sos/{sos_id}",
+    response_model=GuardianSosDetailResponse,
+    responses={401: {"model": ErrorResponse}, 403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def get_guardian_sos_detail(
+    sos_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> GuardianSosDetailResponse:
+    sos = db.query(SOSEvent).filter(SOSEvent.id == sos_id).first()
+    if sos is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SOS事件不存在")
+
+    allowed = (
+        db.query(GuardianLink)
+        .filter(
+            GuardianLink.traveler_user_id == sos.user_id,
+            GuardianLink.guardian_user_id == current_user.id,
+            GuardianLink.status == "accepted",
+        )
+        .first()
+    )
+    if allowed is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权查看该SOS")
+
+    traveler_user = db.get(User, sos.user_id)
+    if traveler_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SOS用户不存在")
+
+    trip = db.query(Trip).filter(Trip.id == sos.trip_id).first() if sos.trip_id is not None else None
+    events = get_recent_guardian_events(
+        db,
+        traveler_user_id=sos.user_id,
+        trip_id=sos.trip_id if sos.trip_id is not None else None,
+        limit=30,
+    )
+    playback_url = sos.audio_url
+    if sos.audio_media_key:
+        playback_url = f"{str(request.base_url).rstrip('/')}/api/v2/sos/media/{sos.audio_media_key}"
+
+    return GuardianSosDetailResponse(
+        sos_id=sos.id,
+        traveler_user_id=traveler_user.id,
+        traveler_nickname=traveler_user.nickname,
+        trip_id=sos.trip_id,
+        mode=trip.trip_type if trip is not None else None,
+        status=sos.status,
+        created_at=sos.created_at,
+        lat=sos.lat,
+        lng=sos.lng,
+        media_key=sos.audio_media_key,
+        audio_url=sos.audio_url,
+        playback_url=playback_url,
+        recent_events=[to_guardian_event_read(event) for event in events],
     )
 
 
@@ -415,49 +803,48 @@ def create_trip_alert(
         "walk_deviation": "deviation",
         "ride_deviation": "deviation",
     }
-    proactive_message = create_proactive_chat_message(
-        db,
-        user_id=current_user.id,
-        trip_id=trip.id,
-        trigger=trigger_map[payload.alert_type],
-    )
+    proactive_copy = PROACTIVE_MESSAGES.get(trigger_map[payload.alert_type], PROACTIVE_MESSAGES["periodic"])
 
     shared_payload = {
         "trip": trip_snapshot(trip),
         "guardians": [guardian_snapshot(item) for item in guardians],
         "alert_type": payload.alert_type,
-        "proactive_message": proactive_message.content,
+        "proactive_message": proactive_copy,
+        "source": "client",
     }
     if payload.lat is not None and payload.lng is not None:
         shared_payload["alert_location"] = {"lat": payload.lat, "lng": payload.lng}
 
-    labels = {
-        "walk_timeout": ("步行超时提醒", f"{current_user.nickname}的步行行程已超时，请留意"),
-        "walk_deviation": ("步行偏离提醒", f"{current_user.nickname}的步行路线已偏离，请关注"),
-        "ride_deviation": ("乘车偏离提醒", f"{current_user.nickname}的乘车路线已偏离预定路线，请关注"),
-    }
-    title, body = labels[payload.alert_type]
+    incident_key = f"{payload.alert_type}:{trip.id}:{round(payload.lat or 0.0, 4)}:{round(payload.lng or 0.0, 4)}"
+    created_events = maybe_emit_guardian_alert(
+        db,
+        user=current_user,
+        trip=trip,
+        guardians=guardians,
+        event_type=payload.alert_type,
+        incident_key=incident_key,
+        payload=shared_payload,
+        source="client",
+    )
 
-    for guardian in guardians:
-        create_notification_event(
+    proactive_message = None
+    if created_events:
+        proactive_message = create_proactive_chat_message(
             db,
             user_id=current_user.id,
             trip_id=trip.id,
-            guardian_id=guardian.id,
-            event_type=payload.alert_type,
-            title=title,
-            body=body,
-            payload={**shared_payload, "guardian": guardian_snapshot(guardian)},
+            trigger=trigger_map[payload.alert_type],
         )
-
     db.commit()
-    db.refresh(proactive_message)
+    if proactive_message is not None:
+        db.refresh(proactive_message)
+
     return TripAlertResponse(
         trip_id=trip.id,
         alert_type=payload.alert_type,
         guardian_count=len(guardians),
-        proactive_message=proactive_message.content,
-        message_id=proactive_message.id,
+        proactive_message=proactive_message.content if proactive_message is not None else proactive_copy,
+        message_id=proactive_message.id if proactive_message is not None else None,
     )
 
 
@@ -468,6 +855,7 @@ def create_trip_alert(
 )
 def create_v2_sos(
     payload: V2SosRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> V2SosResponse:
@@ -492,6 +880,7 @@ def create_v2_sos(
         trip_id=trip.id if trip is not None else None,
         lat=payload.lat,
         lng=payload.lng,
+        media_key=payload.audio_media_key or payload.media_key or extract_media_key(payload.audio_url),
         audio_url=payload.audio_url,
     )
     if duplicate_sos is not None:
@@ -501,14 +890,29 @@ def create_v2_sos(
             linked_trip_id=trip.id if trip is not None else None,
             guardian_count=len(guardians),
             message="SOS求助已记录",
+            audio_url=duplicate_sos.audio_url or payload.audio_url,
+            media_key=duplicate_sos.audio_media_key or payload.media_key or payload.audio_media_key,
+            audio_media_key=duplicate_sos.audio_media_key or payload.media_key or payload.audio_media_key,
         )
+
+    media_reference: ResolvedMediaReference = resolve_media_reference(
+        base_url=str(request.base_url),
+        audio_url=payload.audio_url,
+        media_key=payload.audio_media_key or payload.media_key,
+    )
 
     sos = SOSEvent(
         user_id=current_user.id,
         trip_id=trip.id if trip is not None else None,
         lat=payload.lat,
         lng=payload.lng,
-        audio_url=payload.audio_url,
+        audio_url=media_reference.audio_url or payload.audio_url,
+        audio_media_key=media_reference.media_key,
+        audio_bucket=media_reference.bucket,
+        audio_content_type=media_reference.content_type,
+        audio_size_bytes=media_reference.size_bytes,
+        audio_storage_mode=media_reference.storage_mode,
+        audio_uploaded_at=now_utc() if media_reference.media_key else None,
         status="active",
     )
     db.add(sos)
@@ -518,7 +922,9 @@ def create_v2_sos(
     body = f"{current_user.nickname}已触发SOS，正在发送实时位置与行程信息"
     shared_payload = {
         "sos_location": {"lat": payload.lat, "lng": payload.lng},
-        "audio_url": payload.audio_url,
+        "audio_url": sos.audio_url,
+        "audio_media_key": sos.audio_media_key,
+        "audio_storage_mode": sos.audio_storage_mode,
     }
     if trip is not None:
         shared_payload["trip"] = trip_snapshot(trip)
@@ -545,4 +951,7 @@ def create_v2_sos(
         linked_trip_id=trip.id if trip is not None else None,
         guardian_count=len(guardians),
         message="SOS求助已记录",
+        audio_url=sos.audio_url,
+        media_key=sos.audio_media_key,
+        audio_media_key=sos.audio_media_key,
     )

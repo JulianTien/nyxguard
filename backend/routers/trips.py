@@ -1,15 +1,26 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from database import get_db
 from deps import get_current_user
 from models import Guardian, Location, SOSEvent, Trip, TripGuardian, User
 from notification_events import emit_trip_guardian_events
+from services.sos_media import (
+    ResolvedMediaReference,
+    build_presign_result,
+    commit_media_reference,
+    resolve_media_reference,
+)
+from services.watchdog import evaluate_trip_watchdog, find_recent_duplicate_sos
 from schemas import (
     ErrorResponse,
     FinishTripResponse,
+    SosMediaCommitRequest,
+    SosMediaCommitResponse,
+    SosMediaPresignRequest,
+    SosMediaPresignResponse,
     LocationUploadRequest,
     SosRequest,
     SosResponse,
@@ -45,34 +56,72 @@ def normalize_guardian_ids(guardian_ids: list[int]) -> list[int]:
     return normalized
 
 
-def find_recent_duplicate_sos(
-    db: Session,
-    *,
-    user_id: int,
+@router.post(
+    "/{trip_id}/sos/media/presign",
+    response_model=SosMediaPresignResponse,
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def presign_sos_media(
     trip_id: int,
-    lat: float,
-    lng: float,
-    audio_url: str | None,
-    within_seconds: int = 20,
-) -> SOSEvent | None:
-    cutoff = utc_now() - timedelta(seconds=within_seconds)
-    candidate = (
-        db.query(SOSEvent)
-        .filter(
-            SOSEvent.user_id == user_id,
-            SOSEvent.trip_id == trip_id,
-            SOSEvent.status == "active",
-            SOSEvent.created_at >= cutoff,
-        )
-        .order_by(SOSEvent.created_at.desc(), SOSEvent.id.desc())
-        .first()
+    payload: SosMediaPresignRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SosMediaPresignResponse:
+    get_owned_trip(db, trip_id, current_user.id)
+    result = build_presign_result(
+        base_url=str(request.base_url),
+        user_id=current_user.id,
+        trip_id=trip_id,
+        filename=payload.filename,
+        content_type=payload.content_type,
+        size_bytes=payload.size_bytes,
     )
-    if candidate is None:
-        return None
+    return SosMediaPresignResponse(
+        media_key=result.media_key,
+        upload_url=result.upload_url,
+        upload_method=result.upload_method,
+        upload_headers=result.upload_headers,
+        playback_url=result.playback_url,
+        audio_url=result.audio_url,
+        storage_mode=result.storage_mode,
+        bucket=result.bucket,
+        expires_in_seconds=result.expires_in_seconds,
+    )
 
-    same_location = abs(candidate.lat - lat) <= 0.00001 and abs(candidate.lng - lng) <= 0.00001
-    same_audio = candidate.audio_url == audio_url or not candidate.audio_url or not audio_url
-    return candidate if same_location and same_audio else None
+
+@router.post(
+    "/{trip_id}/sos/media/commit",
+    response_model=SosMediaCommitResponse,
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def commit_sos_media(
+    trip_id: int,
+    payload: SosMediaCommitRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SosMediaCommitResponse:
+    get_owned_trip(db, trip_id, current_user.id)
+    media_key = (payload.media_key or "").strip()
+    if not media_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="media_key不能为空")
+    result = commit_media_reference(
+        base_url=str(request.base_url),
+        media_key=media_key,
+        content_type=payload.content_type,
+        size_bytes=payload.size_bytes,
+    )
+    return SosMediaCommitResponse(
+        media_key=result.media_key,
+        audio_url=result.audio_url,
+        playback_url=result.playback_url,
+        storage_mode=result.storage_mode,
+        bucket=result.bucket,
+        content_type=result.content_type,
+        size_bytes=result.size_bytes,
+        message="SOS媒体已准备就绪",
+    )
 
 
 @router.post(
@@ -229,6 +278,8 @@ def upload_locations(
             )
         )
     db.commit()
+    evaluate_trip_watchdog(db, trip=trip, user=current_user, now=utc_now())
+    db.commit()
     return UploadLocationsResponse(uploaded=len(payload.locations))
 
 
@@ -274,6 +325,7 @@ def finish_trip(
 def trigger_sos(
     trip_id: int,
     payload: SosRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SosResponse:
@@ -286,23 +338,43 @@ def trigger_sos(
         .order_by(TripGuardian.created_at.asc(), Guardian.id.asc())
         .all()
     )
+    media_reference: ResolvedMediaReference = resolve_media_reference(
+        base_url=str(request.base_url),
+        audio_url=payload.audio_url,
+        media_key=payload.audio_media_key or payload.media_key,
+    )
+
     duplicate_sos = find_recent_duplicate_sos(
         db,
         user_id=current_user.id,
         trip_id=trip.id,
         lat=payload.lat,
         lng=payload.lng,
-        audio_url=payload.audio_url,
+        media_key=media_reference.media_key,
+        audio_url=media_reference.audio_url or payload.audio_url,
     )
     if duplicate_sos is not None:
-        return SosResponse(status=trip.status, sos_id=duplicate_sos.id, message="SOS求助已记录")
+        return SosResponse(
+            status=trip.status,
+            sos_id=duplicate_sos.id,
+            message="SOS求助已记录",
+            audio_url=duplicate_sos.audio_url or media_reference.audio_url or payload.audio_url,
+            media_key=duplicate_sos.audio_media_key or media_reference.media_key,
+            audio_media_key=duplicate_sos.audio_media_key or media_reference.media_key,
+        )
 
     sos = SOSEvent(
         user_id=current_user.id,
         trip_id=trip.id,
         lat=payload.lat,
         lng=payload.lng,
-        audio_url=payload.audio_url,
+        audio_url=media_reference.audio_url or payload.audio_url,
+        audio_media_key=media_reference.media_key,
+        audio_bucket=media_reference.bucket,
+        audio_content_type=media_reference.content_type,
+        audio_size_bytes=media_reference.size_bytes,
+        audio_storage_mode=media_reference.storage_mode,
+        audio_uploaded_at=utc_now() if media_reference.media_key else None,
         status="active",
     )
     db.add(trip)
@@ -315,9 +387,18 @@ def trigger_sos(
         event_type="sos_triggered",
         extra_payload={
             "sos_location": {"lat": payload.lat, "lng": payload.lng},
-            "audio_url": payload.audio_url,
+            "audio_url": sos.audio_url,
+            "audio_media_key": sos.audio_media_key,
+            "audio_storage_mode": sos.audio_storage_mode,
         },
     )
     db.commit()
     db.refresh(sos)
-    return SosResponse(status=trip.status, sos_id=sos.id, message="SOS求助已记录")
+    return SosResponse(
+        status=trip.status,
+        sos_id=sos.id,
+        message="SOS求助已记录",
+        audio_url=sos.audio_url,
+        media_key=sos.audio_media_key,
+        audio_media_key=sos.audio_media_key,
+    )

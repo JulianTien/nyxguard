@@ -3,6 +3,7 @@ package com.scf.nyxguard
 import android.Manifest
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -25,7 +26,10 @@ import com.scf.nyxguard.ui.MapFragment
 import com.scf.nyxguard.ui.ProfileFragment
 import com.scf.nyxguard.util.AmapSdkInitializer
 import com.scf.nyxguard.util.AndroidLocationProvider
+import com.scf.nyxguard.util.GuardianDeepLink
+import com.scf.nyxguard.util.GuardianRouteStore
 import com.scf.nyxguard.util.SosAudioPlaceholder
+import com.scf.nyxguard.util.PushTokenSyncManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,6 +47,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         installGLThreadCrashGuard()
+        ApiClient.init(this)
 
         AmapSdkInitializer.ensureInitialized(this)
 
@@ -64,6 +69,8 @@ class MainActivity : AppCompatActivity() {
         }
         setupBottomNav()
         setupGlobalSos()
+        handleIncomingIntent(intent)
+        PushTokenSyncManager.syncIfPossible(this)
         renderBottomNav()
     }
 
@@ -165,6 +172,27 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
     }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: android.content.Intent?) {
+        val deepLink = GuardianDeepLink.fromIntent(intent) ?: return
+        GuardianRouteStore.save(this, deepLink)
+        supportFragmentManager.setFragmentResult(
+            GuardianDeepLink.RESULT_KEY,
+            deepLink.toBundle()
+        )
+
+        if (selectedNavId != R.id.nav_map) {
+            switchFragment(mapFragment, R.id.nav_map)
+        } else {
+            renderBottomNav()
+        }
+    }
+
     private fun resolveSosLocation(onResolved: (Double, Double) -> Unit) {
         val snapshot = ActiveTripStore.get(this)
         val hasPermission = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
@@ -206,6 +234,12 @@ class MainActivity : AppCompatActivity() {
         updateNavItem(binding.navMap, binding.navMapIcon, binding.navMapLabel, selectedNavId == R.id.nav_map)
         updateNavItem(binding.navChat, binding.navChatIcon, binding.navChatLabel, selectedNavId == R.id.nav_chat)
         updateNavItem(binding.navProfile, binding.navProfileIcon, binding.navProfileLabel, selectedNavId == R.id.nav_profile)
+        updateGlobalSosVisibility()
+    }
+
+    private fun updateGlobalSosVisibility() {
+        val shouldShow = selectedNavId != R.id.nav_chat
+        binding.fabGlobalSos.visibility = if (shouldShow) View.VISIBLE else View.GONE
     }
 
     private fun updateNavItem(container: LinearLayout, icon: ImageView, label: TextView, active: Boolean) {

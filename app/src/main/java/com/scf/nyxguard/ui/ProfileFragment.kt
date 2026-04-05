@@ -13,6 +13,8 @@ import com.scf.nyxguard.R
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.scf.nyxguard.common.ThemePreference
 import com.scf.nyxguard.common.ThemePreferenceStore
+import com.scf.nyxguard.common.RoleMode
+import com.scf.nyxguard.common.RoleModeStore
 import com.scf.nyxguard.databinding.DialogEditProfileBinding
 import com.scf.nyxguard.databinding.FragmentProfileBinding
 import com.scf.nyxguard.fakecall.FakeCallSettingActivity
@@ -23,6 +25,8 @@ import com.scf.nyxguard.network.UpdateProfileRequest
 import com.scf.nyxguard.network.UserDto
 import com.scf.nyxguard.network.enqueue
 import com.scf.nyxguard.profile.GuardianActivity
+import com.scf.nyxguard.ui.guardian.GuardianHubActivity
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -73,6 +77,14 @@ class ProfileFragment : Fragment() {
                 .show()
         }
         binding.menuLogout.setOnClickListener { showLogoutDialog() }
+        binding.btnProfileRoleSwitch.setOnClickListener { toggleRoleMode() }
+        binding.btnProfileOpenGuardianHub.setOnClickListener {
+            startActivity(
+                Intent(requireContext(), GuardianHubActivity::class.java).apply {
+                    putExtra(GuardianHubActivity.EXTRA_INITIAL_TAB, GuardianHubActivity.TAB_DASHBOARD)
+                }
+            )
+        }
 
         // 显示本地缓存的昵称
         binding.userName.text = TokenManager.getNickname(requireContext())
@@ -83,6 +95,7 @@ class ProfileFragment : Fragment() {
         binding.userAvatar.setImageResource(R.drawable.ic_nav_profile)
         renderCachedProfile()
         renderCachedSummary()
+        renderRoleUi()
         updateLanguageSummary()
         updateThemeSummary()
     }
@@ -92,8 +105,21 @@ class ProfileFragment : Fragment() {
         loadProfile()
         loadProfileSummary()
         loadGuardianCount()
+        renderRoleUi()
         updateLanguageSummary()
         updateThemeSummary()
+    }
+
+    private fun toggleRoleMode() {
+        val next = RoleModeStore.toggle(requireContext())
+        renderRoleUi()
+        if (next == RoleMode.GUARDIAN) {
+            startActivity(
+                Intent(requireContext(), GuardianHubActivity::class.java).apply {
+                    putExtra(GuardianHubActivity.EXTRA_INITIAL_TAB, GuardianHubActivity.TAB_DASHBOARD)
+                }
+            )
+        }
     }
 
     private fun loadProfile() {
@@ -298,6 +324,23 @@ class ProfileFragment : Fragment() {
         binding.profileBadge.text = getString(R.string.edge_profile_badge, badgeDays)
     }
 
+    private fun renderRoleUi() {
+        val guardianMode = RoleModeStore.isGuardian(requireContext())
+        binding.profileModeLabel.setText(
+            if (guardianMode) R.string.role_mode_current_guardian else R.string.role_mode_current_traveler
+        )
+        binding.profileModeTitle.setText(
+            if (guardianMode) R.string.role_mode_guardian_title else R.string.role_mode_traveler_title
+        )
+        binding.profileModeDesc.setText(
+            if (guardianMode) R.string.role_mode_guardian_desc else R.string.role_mode_traveler_desc
+        )
+        binding.btnProfileRoleSwitch.setText(
+            if (guardianMode) R.string.role_mode_switch_to_traveler else R.string.role_mode_switch_to_guardian
+        )
+        binding.btnProfileOpenGuardianHub.visibility = if (guardianMode) View.VISIBLE else View.GONE
+    }
+
     private fun buildAccountMeta(createdAt: String?, updatedAt: String?): String {
         val createdLabel = createdAt?.let { formatDateTime(it) } ?: "--"
         val updatedLabel = updatedAt?.let { formatDateTime(it) } ?: "--"
@@ -305,10 +348,17 @@ class ProfileFragment : Fragment() {
     }
 
     private fun formatDateTime(raw: String): String {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
         return runCatching {
             val parsed = OffsetDateTime.parse(raw)
-            parsed.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault()))
-        }.getOrElse { raw }
+            parsed.format(formatter)
+        }.recoverCatching {
+            val parsed = LocalDateTime.parse(raw)
+            parsed.format(formatter)
+        }.getOrElse {
+            val normalized = raw.replace('T', ' ')
+            if (normalized.length >= 16) normalized.substring(0, 16) else normalized
+        }
     }
 
     private fun profileStreakDays(createdAt: String?): Int {

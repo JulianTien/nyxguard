@@ -218,10 +218,19 @@
     <string name="guardian_delete_action">删除</string>
 
     <!-- Notifications -->
+    <string name="push_channel_name">守护通知</string>
+    <string name="push_channel_description">行程、SOS 和守护详情深链路通知</string>
+    <string name="push_default_title">NyxGuard 提醒</string>
+    <string name="push_default_body">打开应用查看最新的守护更新。</string>
     <string name="tracking_notification_default">正在守护你的行程</string>
     <string name="tracking_channel_name">行程守护</string>
     <string name="tracking_channel_description">实时位置追踪守护</string>
     <string name="tracking_notification_title">NyxGuard 守护中</string>
+
+    <!-- Guardian Mode -->
+    <string name="guardian_dashboard_subtitle">%1$s 守护概览 · %2$d 位守护者</string>
+    <string name="guardian_trip_empty">当前没有进行中的受保护行程</string>
+    <string name="guardian_sos_empty">当前没有活跃的 SOS 事件</string>
 
     <!-- API -->
     <string name="api_request_failed">请求失败</string>

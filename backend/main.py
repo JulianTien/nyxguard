@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from config import get_settings
 from database import Base, engine
-from routers import auth, chat, guardians, notifications, trips, user, v2
+from routers import auth, chat, guardian_links, guardians, notifications, push_tokens, trips, user, v2
 from schema_compat import ensure_schema_compatibility
 
 
@@ -54,9 +54,11 @@ def create_app() -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(user.router)
+    app.include_router(guardian_links.router)
     app.include_router(guardians.router)
     app.include_router(trips.router)
     app.include_router(notifications.router)
+    app.include_router(push_tokens.router)
     app.include_router(chat.router)
     app.include_router(v2.router)
     return app

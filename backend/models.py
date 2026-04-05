@@ -31,6 +31,7 @@ class User(Base):
     trips: Mapped[list["Trip"]] = orm_relationship(back_populates="user")
     chat_messages: Mapped[list["ChatMessage"]] = orm_relationship(back_populates="user")
     notification_events: Mapped[list["NotificationEvent"]] = orm_relationship(back_populates="user", cascade="all, delete-orphan")
+    push_tokens: Mapped[list["PushToken"]] = orm_relationship(back_populates="user", cascade="all, delete-orphan")
 
 
 class Guardian(Base):
@@ -45,6 +46,22 @@ class Guardian(Base):
 
     user: Mapped["User"] = orm_relationship(back_populates="guardians")
     trip_links: Mapped[list["TripGuardian"]] = orm_relationship(back_populates="guardian", cascade="all, delete-orphan")
+
+
+class GuardianLink(Base):
+    __tablename__ = "ng_guardian_link"
+    __table_args__ = (
+        UniqueConstraint("traveler_user_id", "guardian_user_id", name="uq_guardian_link_traveler_guardian"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    traveler_user_id: Mapped[int] = mapped_column(ForeignKey("ng_user.id", ondelete="CASCADE"), nullable=False, index=True)
+    guardian_user_id: Mapped[int] = mapped_column(ForeignKey("ng_user.id", ondelete="CASCADE"), nullable=False, index=True)
+    relationship: Mapped[str] = mapped_column(String(20), nullable=False, default="朋友")
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+    invited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
 
 class Trip(Base):
@@ -113,11 +130,38 @@ class SOSEvent(Base):
     lat: Mapped[float] = mapped_column(Float, nullable=False)
     lng: Mapped[float] = mapped_column(Float, nullable=False)
     audio_url: Mapped[Optional[str]] = mapped_column(String(500))
+    audio_media_key: Mapped[Optional[str]] = mapped_column(String(200), index=True)
+    audio_bucket: Mapped[Optional[str]] = mapped_column(String(100))
+    audio_content_type: Mapped[Optional[str]] = mapped_column(String(100))
+    audio_etag: Mapped[Optional[str]] = mapped_column(String(200))
+    audio_size_bytes: Mapped[Optional[int]] = mapped_column(Integer)
+    audio_storage_mode: Mapped[str] = mapped_column(String(20), default="legacy", nullable=False)
+    audio_uploaded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     user: Mapped["User"] = orm_relationship()
     trip: Mapped["Trip"] = orm_relationship(back_populates="sos_events")
+
+
+class PushToken(Base):
+    __tablename__ = "ng_push_token"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("ng_user.id", ondelete="CASCADE"), nullable=False, index=True)
+    token: Mapped[str] = mapped_column(String(512), nullable=False, unique=True, index=True)
+    platform: Mapped[str] = mapped_column(String(20), default="android", nullable=False)
+    device_name: Mapped[Optional[str]] = mapped_column(String(100))
+    app_version: Mapped[Optional[str]] = mapped_column(String(40))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=True
+    )
+
+    user: Mapped["User"] = orm_relationship(back_populates="push_tokens")
 
 
 class ChatMessage(Base):
@@ -146,7 +190,13 @@ class NotificationEvent(Base):
     title: Mapped[str] = mapped_column(String(120), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     payload_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    status: Mapped[str] = mapped_column(String(20), default="recorded", nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="queued", nullable=False)
+    delivery_channel: Mapped[str] = mapped_column(String(20), default="fcm", nullable=False)
+    delivery_status: Mapped[str] = mapped_column(String(20), default="queued", nullable=False)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    delivered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    opened_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    failure_reason: Mapped[Optional[str]] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     user: Mapped["User"] = orm_relationship(back_populates="notification_events")

@@ -92,6 +92,22 @@ def ensure_sos_columns(engine: Engine) -> None:
     statements: list[str] = []
     if "user_id" not in existing_columns:
         statements.append("ALTER TABLE ng_sos_event ADD COLUMN user_id INTEGER")
+    if "audio_media_key" not in existing_columns:
+        statements.append("ALTER TABLE ng_sos_event ADD COLUMN audio_media_key VARCHAR(200)")
+    if "audio_bucket" not in existing_columns:
+        statements.append("ALTER TABLE ng_sos_event ADD COLUMN audio_bucket VARCHAR(100)")
+    if "audio_content_type" not in existing_columns:
+        statements.append("ALTER TABLE ng_sos_event ADD COLUMN audio_content_type VARCHAR(100)")
+    if "audio_etag" not in existing_columns:
+        statements.append("ALTER TABLE ng_sos_event ADD COLUMN audio_etag VARCHAR(200)")
+    if "audio_size_bytes" not in existing_columns:
+        statements.append("ALTER TABLE ng_sos_event ADD COLUMN audio_size_bytes INTEGER")
+    if "audio_storage_mode" not in existing_columns:
+        statements.append(
+            "ALTER TABLE ng_sos_event ADD COLUMN audio_storage_mode VARCHAR(20) NOT NULL DEFAULT 'legacy'"
+        )
+    if "audio_uploaded_at" not in existing_columns:
+        statements.append("ALTER TABLE ng_sos_event ADD COLUMN audio_uploaded_at DATETIME")
 
     _execute_statements(engine, statements)
 
@@ -104,6 +120,16 @@ def ensure_sos_columns(engine: Engine) -> None:
                     "  SELECT ng_trip.user_id FROM ng_trip WHERE ng_trip.id = ng_sos_event.trip_id"
                     ") "
                     "WHERE user_id IS NULL AND trip_id IS NOT NULL"
+                )
+            )
+
+    if "audio_storage_mode" not in existing_columns:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "UPDATE ng_sos_event "
+                    "SET audio_storage_mode = 'legacy' "
+                    "WHERE audio_storage_mode IS NULL"
                 )
             )
 
@@ -143,7 +169,66 @@ def ensure_sos_columns(engine: Engine) -> None:
                 conn.execute(text("ALTER TABLE ng_sos_event ALTER COLUMN trip_id DROP NOT NULL"))
 
 
+def ensure_notification_columns(engine: Engine) -> None:
+    inspector = inspect(engine)
+    if "ng_notification_event" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("ng_notification_event")}
+    statements: list[str] = []
+    if "delivery_channel" not in existing_columns:
+        statements.append("ALTER TABLE ng_notification_event ADD COLUMN delivery_channel VARCHAR(20) DEFAULT 'fcm'")
+    if "delivery_status" not in existing_columns:
+        statements.append("ALTER TABLE ng_notification_event ADD COLUMN delivery_status VARCHAR(20) DEFAULT 'queued'")
+    if "attempt_count" not in existing_columns:
+        statements.append("ALTER TABLE ng_notification_event ADD COLUMN attempt_count INTEGER DEFAULT 0")
+    if "delivered_at" not in existing_columns:
+        statements.append(
+            f"ALTER TABLE ng_notification_event ADD COLUMN delivered_at {_timestamp_type(engine)}"
+        )
+    if "opened_at" not in existing_columns:
+        statements.append(
+            f"ALTER TABLE ng_notification_event ADD COLUMN opened_at {_timestamp_type(engine)}"
+        )
+    if "failure_reason" not in existing_columns:
+        statements.append("ALTER TABLE ng_notification_event ADD COLUMN failure_reason VARCHAR(500)")
+
+    _execute_statements(engine, statements)
+
+    if statements:
+        with engine.begin() as conn:
+            if "delivery_channel" not in existing_columns:
+                conn.execute(
+                    text(
+                        "UPDATE ng_notification_event "
+                        "SET delivery_channel = 'fcm'"
+                    )
+                )
+            if "delivery_status" not in existing_columns:
+                conn.execute(
+                    text(
+                        "UPDATE ng_notification_event "
+                        "SET delivery_status = COALESCE(status, 'queued')"
+                    )
+                )
+            if "attempt_count" not in existing_columns:
+                conn.execute(
+                    text(
+                        "UPDATE ng_notification_event "
+                        "SET attempt_count = 0"
+                    )
+                )
+            conn.execute(
+                text(
+                    "UPDATE ng_notification_event "
+                    "SET status = COALESCE(status, 'queued') "
+                    "WHERE status IS NULL"
+                )
+            )
+
+
 def ensure_schema_compatibility(engine: Engine) -> None:
     ensure_user_profile_columns(engine)
     ensure_trip_columns(engine)
     ensure_sos_columns(engine)
+    ensure_notification_columns(engine)

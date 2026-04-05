@@ -40,23 +40,19 @@ class HomeFragment : Fragment() {
 
     private fun setupGreeting() {
         val localNickname = TokenManager.getNickname(requireContext()).ifBlank { "Sarah" }
-        binding.greetingText.text = getString(R.string.home_greeting_with_name, getString(R.string.greeting_evening), localNickname)
+        binding.greetingText.text = getString(
+            R.string.home_greeting_with_name,
+            getString(R.string.greeting_evening),
+            localNickname
+        )
         binding.greetingSubtitle.setText(R.string.home_guard_subtitle)
     }
 
     private fun setupCards() {
-        binding.cardWalk.setOnClickListener {
-            startActivity(Intent(requireContext(), WalkSettingActivity::class.java))
-        }
-        binding.cardRide.setOnClickListener {
-            startActivity(Intent(requireContext(), RideSettingActivity::class.java))
-        }
-        binding.cardFakeCall.setOnClickListener {
-            startActivity(Intent(requireContext(), FakeCallSettingActivity::class.java))
-        }
-        binding.cardAlarm.setOnClickListener {
-            startActivity(Intent(requireContext(), AlarmActivity::class.java))
-        }
+        binding.cardWalk.setOnClickListener { startActivity(Intent(requireContext(), WalkSettingActivity::class.java)) }
+        binding.cardRide.setOnClickListener { startActivity(Intent(requireContext(), RideSettingActivity::class.java)) }
+        binding.cardFakeCall.setOnClickListener { startActivity(Intent(requireContext(), FakeCallSettingActivity::class.java)) }
+        binding.cardAlarm.setOnClickListener { startActivity(Intent(requireContext(), AlarmActivity::class.java)) }
         binding.btnThemeToggle.setOnClickListener {
             ThemePreferenceStore.toggleLightDark(requireContext())
         }
@@ -66,8 +62,9 @@ class HomeFragment : Fragment() {
         ApiClient.service.getDashboard().enqueue(
             onSuccess = { response ->
                 if (_binding == null) return@enqueue
+                val localNickname = TokenManager.getNickname(requireContext()).ifBlank { response.nickname }
                 binding.greetingText.text =
-                    getString(R.string.home_greeting_with_name, response.greeting, response.nickname)
+                    getString(R.string.home_greeting_with_name, response.greeting, localNickname)
                 binding.greetingSubtitle.text = if (response.active_trip_brief != null) {
                     getString(
                         R.string.home_dashboard_active_trip,

@@ -235,10 +235,19 @@
     <string name="guardian_delete_action">Delete</string>
 
     <!-- Notifications -->
+    <string name="push_channel_name">Guardian alerts</string>
+    <string name="push_channel_description">Trips, SOS, and guardian deep-link notifications</string>
+    <string name="push_default_title">NyxGuard alert</string>
+    <string name="push_default_body">Open the app to view the latest guardian update.</string>
     <string name="tracking_notification_default">Protecting your trip</string>
     <string name="tracking_channel_name">Trip protection</string>
     <string name="tracking_channel_description">Real-time location protection</string>
     <string name="tracking_notification_title">NyxGuard protecting you</string>
+
+    <!-- Guardian Mode -->
+    <string name="guardian_dashboard_subtitle">%1$s guardian overview · %2$d guardian(s)</string>
+    <string name="guardian_trip_empty">No active protected trip</string>
+    <string name="guardian_sos_empty">No active SOS event</string>
 
     <!-- API -->
     <string name="api_request_failed">Request failed</string>
