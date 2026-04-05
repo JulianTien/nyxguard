@@ -41,3 +41,5 @@ backend/*.sqlite3
 .Python
 venv/
 .venv/
+Docs/QA/artifacts/*
+!Docs/QA/artifacts/.gitkeep

@@ -59,7 +59,6 @@ class HomeFragment : Fragment() {
         }
         binding.btnThemeToggle.setOnClickListener {
             ThemePreferenceStore.toggleLightDark(requireContext())
-            requireActivity().recreate()
         }
     }
 

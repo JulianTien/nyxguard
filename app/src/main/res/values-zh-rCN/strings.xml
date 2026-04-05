@@ -83,6 +83,7 @@
     <string name="walk_route_info">路线信息</string>
     <string name="walk_start_trip">开始行程</string>
     <string name="walk_current_location">当前位置</string>
+    <string name="walk_current_location_coords">当前位置（%1$.4f, %2$.4f）</string>
     <string name="route_planning_failed">路线规划失败</string>
     <string name="route_distance_km">距离: %1$.1f 公里</string>
     <string name="route_distance_meters">距离: %1$d 米</string>
@@ -201,6 +202,7 @@
     <!-- Guardian -->
     <string name="guardian_title">守护者管理</string>
     <string name="guardian_subtitle">最多添加5名守护者，行程中他们会收到你的安全状态通知</string>
+    <string name="guardian_add_disabled">已达守护者上限</string>
     <string name="guardian_empty">还没有守护者\n点击下方按钮添加</string>
     <string name="guardian_add">添加守护者</string>
     <string name="guardian_name_hint">姓名</string>

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ConfigurationInfo
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -16,14 +17,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.amap.api.location.AMapLocationClient
-import com.amap.api.location.AMapLocationClientOption
-import com.amap.api.location.AMapLocationListener
 import com.amap.api.maps.AMap
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.TextureMapView
 import com.amap.api.maps.model.LatLng
-import com.amap.api.maps.model.MyLocationStyle
 import com.scf.nyxguard.R
 import com.scf.nyxguard.common.ActiveTripStore
 import com.scf.nyxguard.common.ThemePreferenceStore
@@ -34,6 +31,8 @@ import com.scf.nyxguard.network.enqueue
 import com.scf.nyxguard.ride.RideSettingActivity
 import com.scf.nyxguard.ride.RideTrackingActivity
 import com.scf.nyxguard.service.LocationTrackingService
+import com.scf.nyxguard.util.AmapSdkInitializer
+import com.scf.nyxguard.util.AndroidLocationProvider
 import com.scf.nyxguard.walk.WalkSettingActivity
 import com.scf.nyxguard.walk.WalkTrackingActivity
 
@@ -44,8 +43,9 @@ class MapFragment : Fragment() {
 
     private var mapView: TextureMapView? = null
     private var aMap: AMap? = null
-    private var locationClient: AMapLocationClient? = null
+    private var locationSubscription: AndroidLocationProvider.Subscription? = null
     private var mapAvailable = false
+    private var mapSupported = true
     private var currentTrip: CurrentTripDto? = null
 
     private val locationPermissionLauncher = registerForActivityResult(
@@ -54,7 +54,6 @@ class MapFragment : Fragment() {
         val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
         val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (fineGranted || coarseGranted) {
-            setupLocationStyle()
             startLocation()
         } else {
             Toast.makeText(requireContext(), getString(R.string.map_location_permission_required), Toast.LENGTH_SHORT).show()
@@ -73,7 +72,9 @@ class MapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        if (supportsOpenGLES2()) {
+        AmapSdkInitializer.ensureInitialized(requireContext())
+        mapSupported = supportsOpenGLES2()
+        if (mapSupported) {
             initMap(savedInstanceState)
         } else {
             showFallback()
@@ -92,6 +93,7 @@ class MapFragment : Fragment() {
 
     private fun initMap(savedInstanceState: Bundle?) {
         try {
+            hideFallback()
             mapView = TextureMapView(requireContext()).also { mv ->
                 binding.mapContainer.addView(mv)
                 mv.onCreate(savedInstanceState)
@@ -111,6 +113,17 @@ class MapFragment : Fragment() {
         binding.mapContainer.visibility = View.GONE
         binding.fallbackLayout.visibility = View.VISIBLE
         binding.fabLocation.visibility = View.GONE
+        binding.mapLightScrim.visibility = View.GONE
+        binding.mapGridOverlay.visibility = View.GONE
+        binding.mapRoutePreview.visibility = View.GONE
+    }
+
+    private fun hideFallback() {
+        binding.mapContainer.visibility = View.VISIBLE
+        binding.fallbackLayout.visibility = View.GONE
+        binding.mapLightScrim.visibility = View.GONE
+        binding.mapGridOverlay.visibility = View.GONE
+        binding.mapRoutePreview.visibility = View.GONE
     }
 
     private fun setupMap() {
@@ -119,19 +132,6 @@ class MapFragment : Fragment() {
             uiSettings.isMyLocationButtonEnabled = false
             uiSettings.isCompassEnabled = false
             moveCamera(CameraUpdateFactory.zoomTo(16f))
-        }
-    }
-
-    private fun setupLocationStyle() {
-        val locationStyle = MyLocationStyle().apply {
-            myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
-            interval(10_000)
-            strokeColor(0x00000000)
-            radiusFillColor(0x220000FF)
-        }
-        aMap?.apply {
-            myLocationStyle = locationStyle
-            isMyLocationEnabled = true
         }
     }
 
@@ -145,7 +145,6 @@ class MapFragment : Fragment() {
         if (fineLocation == PackageManager.PERMISSION_GRANTED ||
             coarseLocation == PackageManager.PERMISSION_GRANTED
         ) {
-            setupLocationStyle()
             startLocation()
         } else {
             locationPermissionLauncher.launch(
@@ -158,34 +157,29 @@ class MapFragment : Fragment() {
     }
 
     private fun startLocation() {
-        locationClient = AMapLocationClient(requireContext().applicationContext).apply {
-            val option = AMapLocationClientOption().apply {
-                locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
-                interval = 10_000
-                isNeedAddress = true
-            }
-            setLocationOption(option)
-            setLocationListener(locationListener)
-            startLocation()
+        locationSubscription?.stop()
+        locationSubscription = AndroidLocationProvider.requestLocationUpdates(
+            requireContext(),
+            10_000L
+        ) { location ->
+            onLocationReceived(location)
         }
     }
 
-    private val locationListener = AMapLocationListener { location ->
-        if (location != null && location.errorCode == 0) {
-            aMap?.animateCamera(
-                CameraUpdateFactory.newLatLngZoom(
-                    LatLng(location.latitude, location.longitude),
-                    16f
-                )
+    private fun onLocationReceived(location: Location) {
+        aMap?.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(location.latitude, location.longitude),
+                16f
             )
-            locationClient?.stopLocation()
-        }
+        )
+        locationSubscription?.stop()
+        locationSubscription = null
     }
 
     private fun setupThemeToggle() {
         binding.btnThemeToggle.setOnClickListener {
             ThemePreferenceStore.toggleLightDark(requireContext())
-            requireActivity().recreate()
         }
     }
 
@@ -195,7 +189,7 @@ class MapFragment : Fragment() {
             if (snapshot != null) {
                 openActiveTrip(snapshot)
             } else if (mapAvailable) {
-                locationClient?.startLocation()
+                startLocation()
             }
         }
         binding.btnStartWalk.setOnClickListener {
@@ -295,9 +289,10 @@ class MapFragment : Fragment() {
         val snapshot = ActiveTripStore.get(requireContext())
         val hasActiveTrip = remoteTrip != null || snapshot?.isActive == true
 
+        syncMapState(hasActiveTrip)
+
         binding.guardActiveContent.visibility = if (hasActiveTrip) View.VISIBLE else View.GONE
         binding.guardIdleContent.visibility = if (hasActiveTrip) View.GONE else View.VISIBLE
-        binding.mapRoutePreview.visibility = if (hasActiveTrip) View.VISIBLE else View.INVISIBLE
         binding.guardStatusCard.alpha = if (hasActiveTrip) 1f else 0.94f
 
         if (!hasActiveTrip) {
@@ -335,6 +330,32 @@ class MapFragment : Fragment() {
             ?: 0
     }
 
+    private fun syncMapState(hasActiveTrip: Boolean) {
+        if (!mapSupported) {
+            showFallback()
+            return
+        }
+
+        if (mapView == null) {
+            initMap(null)
+        } else {
+            hideFallback()
+            if (hasActiveTrip && mapAvailable) {
+                startLocation()
+            }
+        }
+    }
+
+    private fun destroyMap() {
+        locationSubscription?.stop()
+        locationSubscription = null
+        mapView?.onDestroy()
+        mapView?.let { binding.mapContainer.removeView(it) }
+        mapView = null
+        aMap = null
+        mapAvailable = false
+    }
+
     override fun onResume() {
         super.onResume()
         mapView?.onResume()
@@ -353,20 +374,14 @@ class MapFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        locationClient?.stopLocation()
-        locationClient?.onDestroy()
-        locationClient = null
-        mapView?.onDestroy()
-        mapView = null
+        destroyMap()
         _binding = null
     }
 
     /** 由 MainActivity 在 GLThread 崩溃时调用，切换到降级模式 */
     fun onGLContextFailed() {
         if (_binding != null && mapAvailable) {
-            mapView?.let { binding.mapContainer.removeView(it) }
-            mapView = null
-            aMap = null
+            destroyMap()
             showFallback()
         }
     }

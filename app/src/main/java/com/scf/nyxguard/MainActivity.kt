@@ -14,9 +14,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
-import com.amap.api.location.AMapLocationClientOption
-import com.amap.api.location.AMapLocationClient
-import com.amap.api.maps.MapsInitializer
 import com.scf.nyxguard.common.ActiveTripStore
 import com.scf.nyxguard.databinding.ActivityMainBinding
 import com.scf.nyxguard.network.ApiClient
@@ -26,6 +23,8 @@ import com.scf.nyxguard.ui.ChatFragment
 import com.scf.nyxguard.ui.HomeFragment
 import com.scf.nyxguard.ui.MapFragment
 import com.scf.nyxguard.ui.ProfileFragment
+import com.scf.nyxguard.util.AmapSdkInitializer
+import com.scf.nyxguard.util.AndroidLocationProvider
 import com.scf.nyxguard.util.SosAudioPlaceholder
 
 class MainActivity : AppCompatActivity() {
@@ -38,17 +37,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var profileFragment: ProfileFragment
     private var activeFragment: Fragment? = null
     private var selectedNavId: Int = R.id.nav_home
+    private var globalSosInFlight: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         installGLThreadCrashGuard()
 
-        // 高德地图隐私合规
-        MapsInitializer.updatePrivacyShow(this, true, true)
-        MapsInitializer.updatePrivacyAgree(this, true)
-        AMapLocationClient.updatePrivacyShow(this, true, true)
-        AMapLocationClient.updatePrivacyAgree(this, true)
+        AmapSdkInitializer.ensureInitialized(this)
 
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -64,7 +60,7 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             setupFragments()
         } else {
-            restoreFragments()
+            restoreFragments(savedInstanceState)
         }
         setupBottomNav()
         setupGlobalSos()
@@ -82,11 +78,11 @@ class MainActivity : AppCompatActivity() {
             .add(R.id.fragment_container, chatFragment, TAG_CHAT).hide(chatFragment)
             .add(R.id.fragment_container, mapFragment, TAG_MAP).hide(mapFragment)
             .add(R.id.fragment_container, homeFragment, TAG_HOME)
-            .commit()
+            .commitNow()
         activeFragment = homeFragment
     }
 
-    private fun restoreFragments() {
+    private fun restoreFragments(savedInstanceState: Bundle) {
         val fm = supportFragmentManager
         homeFragment = fm.findFragmentByTag(TAG_HOME) as? HomeFragment ?: HomeFragment()
         mapFragment = fm.findFragmentByTag(TAG_MAP) as? MapFragment ?: MapFragment()
@@ -102,18 +98,19 @@ class MainActivity : AppCompatActivity() {
             }.commitNow()
         }
 
-        activeFragment = when {
-            profileFragment.isVisible -> profileFragment
-            chatFragment.isVisible -> chatFragment
-            mapFragment.isVisible -> mapFragment
+        selectedNavId = savedInstanceState.getInt(KEY_SELECTED_NAV, R.id.nav_home)
+        val targetFragment = when (selectedNavId) {
+            R.id.nav_profile -> profileFragment
+            R.id.nav_chat -> chatFragment
+            R.id.nav_map -> mapFragment
             else -> homeFragment
         }
-        selectedNavId = when (activeFragment) {
-            profileFragment -> R.id.nav_profile
-            chatFragment -> R.id.nav_chat
-            mapFragment -> R.id.nav_map
-            else -> R.id.nav_home
-        }
+        fm.beginTransaction().apply {
+            listOf(homeFragment, mapFragment, chatFragment, profileFragment).forEach { fragment ->
+                if (fragment === targetFragment) show(fragment) else hide(fragment)
+            }
+        }.commitNow()
+        activeFragment = targetFragment
     }
 
     private fun setupBottomNav() {
@@ -125,6 +122,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupGlobalSos() {
         binding.fabGlobalSos.setOnClickListener {
+            if (globalSosInFlight || supportFragmentManager.findFragmentByTag("global-sos") != null) {
+                return@setOnClickListener
+            }
             val dialog = CountdownDialogFragment()
             dialog.setOnSOSConfirmedListener {
                 triggerGlobalSos()
@@ -134,6 +134,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun triggerGlobalSos() {
+        if (globalSosInFlight) return
+        globalSosInFlight = true
         val snapshot = ActiveTripStore.get(this)
         resolveSosLocation(
             onResolved = { lat, lng ->
@@ -146,14 +148,21 @@ class MainActivity : AppCompatActivity() {
                     )
                 ).enqueue(
                     onSuccess = {
+                        globalSosInFlight = false
                         Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
                     },
                     onError = {
+                        globalSosInFlight = false
                         Toast.makeText(this, getString(R.string.shell_sos_sent), Toast.LENGTH_LONG).show()
                     }
                 )
             }
         )
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putInt(KEY_SELECTED_NAV, selectedNavId)
+        super.onSaveInstanceState(outState)
     }
 
     private fun resolveSosLocation(onResolved: (Double, Double) -> Unit) {
@@ -168,26 +177,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        runCatching {
-            AMapLocationClient(applicationContext).apply {
-                val option = AMapLocationClientOption().apply {
-                    locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
-                    isOnceLocation = true
-                    isNeedAddress = false
-                }
-                setLocationOption(option)
-                setLocationListener { location ->
-                    stopLocation()
-                    onDestroy()
-                    if (location != null && location.errorCode == 0) {
-                        onResolved(location.latitude, location.longitude)
-                    } else {
-                        onResolved(snapshot?.startLat ?: 0.0, snapshot?.startLng ?: 0.0)
-                    }
-                }
-                startLocation()
+        val request = AndroidLocationProvider.requestSingleLocation(this) { location ->
+            if (location != null) {
+                onResolved(location.latitude, location.longitude)
+            } else {
+                onResolved(snapshot?.startLat ?: 0.0, snapshot?.startLng ?: 0.0)
             }
-        }.onFailure {
+        }
+
+        if (request == null) {
             onResolved(snapshot?.startLat ?: 0.0, snapshot?.startLng ?: 0.0)
         }
     }
@@ -257,5 +255,6 @@ class MainActivity : AppCompatActivity() {
         private const val TAG_MAP = "map"
         private const val TAG_CHAT = "chat"
         private const val TAG_PROFILE = "profile"
+        private const val KEY_SELECTED_NAV = "selected_nav_id"
     }
 }

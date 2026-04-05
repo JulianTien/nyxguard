@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -68,6 +68,36 @@ def get_trip_guardians(db: Session, trip_id: int, user_id: int) -> list[Guardian
         .order_by(TripGuardian.created_at.asc(), Guardian.id.asc())
         .all()
     )
+
+
+def find_recent_duplicate_sos(
+    db: Session,
+    *,
+    user_id: int,
+    trip_id: Optional[int],
+    lat: float,
+    lng: float,
+    audio_url: Optional[str],
+    within_seconds: int = 20,
+) -> Optional[SOSEvent]:
+    cutoff = now_utc() - timedelta(seconds=within_seconds)
+    query = (
+        db.query(SOSEvent)
+        .filter(
+            SOSEvent.user_id == user_id,
+            SOSEvent.status == "active",
+            SOSEvent.created_at >= cutoff,
+        )
+        .order_by(SOSEvent.created_at.desc(), SOSEvent.id.desc())
+    )
+    query = query.filter(SOSEvent.trip_id.is_(None)) if trip_id is None else query.filter(SOSEvent.trip_id == trip_id)
+    candidate = query.first()
+    if candidate is None:
+        return None
+
+    same_location = abs(candidate.lat - lat) <= 0.00001 and abs(candidate.lng - lng) <= 0.00001
+    same_audio = candidate.audio_url == audio_url or not candidate.audio_url or not audio_url
+    return candidate if same_location and same_audio else None
 
 
 def get_guardian_summary(guardians: list[Guardian]) -> str:
@@ -455,6 +485,23 @@ def create_v2_sos(
     if trip is not None:
         trip.status = "emergency"
         db.add(trip)
+
+    duplicate_sos = find_recent_duplicate_sos(
+        db,
+        user_id=current_user.id,
+        trip_id=trip.id if trip is not None else None,
+        lat=payload.lat,
+        lng=payload.lng,
+        audio_url=payload.audio_url,
+    )
+    if duplicate_sos is not None:
+        return V2SosResponse(
+            status=trip.status if trip is not None else "emergency",
+            sos_id=duplicate_sos.id,
+            linked_trip_id=trip.id if trip is not None else None,
+            guardian_count=len(guardians),
+            message="SOS求助已记录",
+        )
 
     sos = SOSEvent(
         user_id=current_user.id,

@@ -12,7 +12,7 @@
     <string name="home_alarm_title">Alarm flash</string>
     <string name="home_alarm_desc">Strobe the screen and vibrate to draw attention.</string>
     <string name="home_fake_call_desc_new">Trigger a realistic call screen in seconds.</string>
-    <string name="guard_proto_idle_title">Currently guarding</string>
+    <string name="guard_proto_idle_title">Guard standby</string>
     <string name="guard_proto_mode_walk">Walking mode</string>
     <string name="guard_proto_mode_ride">Ride mode</string>
     <string name="guard_proto_guardian_count">Shared with %1$d guardian(s) · %2$s</string>

@@ -62,9 +62,8 @@ Run commands from the repository root unless noted otherwise.
 ### Android builds
 
 ```bash
-./gradlew assembleLocalDebug
-./gradlew assembleStagingDebug
-./gradlew assembleProdRelease
+./gradlew assembleDebug
+./gradlew assembleRelease
 ```
 
 ### Android tests
@@ -104,22 +103,19 @@ python3 scripts/api_smoke.py --profile local
 
 ## Configuration Rules
 
-### Android flavor config
-
-The app uses an `env` flavor dimension:
-
-- `localDebug`
-- `stagingDebug`
-- `prodDebug`
-- `prodRelease`
+### Android build config
 
 Do not hardcode API base URLs in Kotlin code.
 
-Provide Android API URLs through Gradle properties:
+Provide the Android API URL through Gradle properties:
 
-- `nyxGuardLocalApiBaseUrl` (optional for `localDebug`; defaults to `http://10.0.2.2:5001/` on the Android Emulator)
-- `nyxGuardStagingApiBaseUrl`
+- `nyxGuardApiBaseUrl`
+
+Backward-compatible fallback property names:
+
 - `nyxGuardProdApiBaseUrl`
+- `nyxGuardStagingApiBaseUrl`
+- `nyxGuardLocalApiBaseUrl`
 
 Preferred locations:
 
@@ -206,7 +202,7 @@ Validation guidance:
 
 ```bash
 # clean Android build
-./gradlew clean assembleLocalDebug
+./gradlew clean assembleDebug
 
 # run all unit tests
 ./gradlew test

@@ -7,6 +7,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
@@ -42,10 +43,32 @@ object ApiClient {
             return retrofit!!.create(AuthApiService::class.java)
         }
 
-    private fun resolveBaseUrl(): String = overriddenBaseUrl ?: normalizeBaseUrl(BuildConfig.NYXGUARD_API_BASE_URL)
+    private fun resolveBaseUrl(): String {
+        val configuredBaseUrl = overriddenBaseUrl ?: BuildConfig.NYXGUARD_API_BASE_URL
+        return remapLoopbackForAndroidEmulator(configuredBaseUrl)
+    }
 
     private fun normalizeBaseUrl(baseUrl: String): String =
         if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+
+    private fun remapLoopbackForAndroidEmulator(baseUrl: String): String {
+        val normalized = normalizeBaseUrl(baseUrl)
+        if (!BuildConfig.DEBUG) {
+            return normalized
+        }
+
+        val uri = runCatching { URI(normalized) }.getOrNull() ?: return normalized
+        val host = uri.host?.lowercase() ?: return normalized
+        if (host != "127.0.0.1" && host != "localhost") {
+            return normalized
+        }
+
+        val port = if (uri.port >= 0) ":${uri.port}" else ""
+        val path = uri.rawPath?.takeIf { it.isNotEmpty() } ?: "/"
+        val query = uri.rawQuery?.let { "?$it" } ?: ""
+        val fragment = uri.rawFragment?.let { "#$it" } ?: ""
+        return "${uri.scheme}://10.0.2.2$port$path$query$fragment"
+    }
 
     private fun buildRetrofit(baseUrl: String): Retrofit {
         val logging = HttpLoggingInterceptor().apply {

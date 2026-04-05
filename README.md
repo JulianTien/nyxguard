@@ -22,6 +22,8 @@ NyxGuard follows a client-server architecture:
 - Database: Neon Postgres in production, SQLite fallback for local development and demos
 - Deployment strategy: FastAPI as an independently deployed backend; `backend/` can also be deployed directly to Vercel as its own project root
 
+For the current end-to-end system diagram and flow breakdown, see [Docs/整体架构图.md](Docs/整体架构图.md).
+
 ## Repository Structure
 
 ```text
@@ -84,41 +86,34 @@ NyxGuard/
 
 ### Android App
 
-NyxGuard now uses an `env` flavor dimension:
+NyxGuard now keeps a single Android application ID across builds: `com.scf.nyxguard`.
 
-- `localDebug`: local FastAPI + SQLite, debug mock fallback enabled
-- `stagingDebug`: preview FastAPI + Neon preview, debug mock fallback enabled
-- `prodDebug`: production API contract with debug tooling, mock fallback disabled
-- `prodRelease`: production build, mock fallback disabled
-
-Provide Android API URLs through Gradle properties in either `~/.gradle/gradle.properties` or project `local.properties`.
+Provide the Android API URL through Gradle properties in either `~/.gradle/gradle.properties` or project `local.properties`.
 
 Supported property names:
 
-- `nyxGuardLocalApiBaseUrl` (optional for `localDebug`; defaults to `http://10.0.2.2:5001/` for the Android Emulator)
-- `nyxGuardStagingApiBaseUrl`
-- `nyxGuardProdApiBaseUrl`
+- `nyxGuardApiBaseUrl`
 
-`stagingDebug`, `prodDebug`, and `prodRelease` still require explicit Gradle properties. If you run `localDebug` on a physical device or a third-party emulator, override `nyxGuardLocalApiBaseUrl` with a host that can reach your machine.
+Backward-compatible fallback order:
+
+- `nyxGuardProdApiBaseUrl`
+- `nyxGuardStagingApiBaseUrl`
+- `nyxGuardLocalApiBaseUrl`
+
+If no property is provided, the app defaults to `https://nyxguard.vercel.app/`.
 
 Machine-specific paths for the Android Studio JBR and `aapt2` should stay in `~/.gradle/gradle.properties`, not in the repository.
 
-Build the local debug APK from the repository root:
+Build the debug APK from the repository root:
 
 ```bash
-./gradlew assembleLocalDebug
+./gradlew assembleDebug
 ```
 
-Build the preview debug APK:
+Build the release APK:
 
 ```bash
-./gradlew assembleStagingDebug
-```
-
-Build the production release APK:
-
-```bash
-./gradlew assembleProdRelease
+./gradlew assembleRelease
 ```
 
 Run unit tests:
@@ -199,11 +194,11 @@ Android URLs are compiled into:
 - `BuildConfig.NYXGUARD_API_BASE_URL`
 - `BuildConfig.NYXGUARD_ENABLE_DEBUG_MOCK_FALLBACK`
 
-Flavor mapping:
+Current mapping:
 
-- `local` -> local FastAPI + SQLite
-- `staging` -> preview FastAPI + Neon preview
-- `prod` -> production FastAPI + Neon production
+- `BuildConfig.NYXGUARD_ENV` -> `default`
+- `BuildConfig.NYXGUARD_API_BASE_URL` -> `nyxGuardApiBaseUrl` or compatible fallback property
+- `BuildConfig.NYXGUARD_ENABLE_DEBUG_MOCK_FALLBACK` -> `false`
 
 ### Backend Env
 

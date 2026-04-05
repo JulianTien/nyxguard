@@ -6,20 +6,20 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.location.Location
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.amap.api.location.AMapLocation
-import com.amap.api.location.AMapLocationClient
-import com.amap.api.location.AMapLocationClientOption
 import com.scf.nyxguard.R
+import com.scf.nyxguard.util.AmapSdkInitializer
+import com.scf.nyxguard.util.AndroidLocationProvider
 
 class LocationTrackingService : Service() {
 
     private val binder = LocationBinder()
-    private var locationClient: AMapLocationClient? = null
-    var onLocationUpdate: ((AMapLocation) -> Unit)? = null
+    private var locationSubscription: AndroidLocationProvider.Subscription? = null
+    var onLocationUpdate: ((Location) -> Unit)? = null
     private var intervalMs: Long = DEFAULT_WALK_INTERVAL
     private var notificationText: String = ""
 
@@ -77,22 +77,14 @@ class LocationTrackingService : Service() {
     }
 
     private fun startLocationUpdates() {
-        AMapLocationClient.updatePrivacyShow(this, true, true)
-        AMapLocationClient.updatePrivacyAgree(this, true)
+        AmapSdkInitializer.ensureInitialized(this)
 
-        locationClient = AMapLocationClient(applicationContext).apply {
-            val option = AMapLocationClientOption().apply {
-                locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
-                interval = intervalMs
-                isNeedAddress = false
-            }
-            setLocationOption(option)
-            setLocationListener { location ->
-                if (location != null && location.errorCode == 0) {
-                    onLocationUpdate?.invoke(location)
-                }
-            }
-            startLocation()
+        locationSubscription?.stop()
+        locationSubscription = AndroidLocationProvider.requestLocationUpdates(
+            this,
+            intervalMs
+        ) { location ->
+            onLocationUpdate?.invoke(location)
         }
     }
 
@@ -103,21 +95,16 @@ class LocationTrackingService : Service() {
 
     /** 动态更新定位频率 */
     fun updateInterval(newIntervalMs: Long) {
-        locationClient?.let {
-            val option = AMapLocationClientOption().apply {
-                locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
-                interval = newIntervalMs
-                isNeedAddress = false
-            }
-            it.setLocationOption(option)
+        intervalMs = newIntervalMs
+        if (locationSubscription != null) {
+            startLocationUpdates()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        locationClient?.stopLocation()
-        locationClient?.onDestroy()
-        locationClient = null
+        locationSubscription?.stop()
+        locationSubscription = null
     }
 
     companion object {

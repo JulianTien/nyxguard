@@ -7,17 +7,15 @@ import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.amap.api.location.AMapLocationClient
-import com.amap.api.location.AMapLocationClientOption
 import com.amap.api.maps.AMap
 import com.amap.api.maps.CameraUpdateFactory
-import com.amap.api.maps.MapsInitializer
 import com.amap.api.maps.TextureMapView
 import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.maps.model.LatLng
@@ -37,7 +35,10 @@ import com.scf.nyxguard.network.GuardianDto
 import com.scf.nyxguard.network.TripGuardianSelectionStore
 import com.scf.nyxguard.network.enqueue
 import com.scf.nyxguard.profile.GuardianActivity
+import com.scf.nyxguard.util.AmapSdkInitializer
+import com.scf.nyxguard.util.AndroidLocationProvider
 import com.scf.nyxguard.util.GeoUtils
+import com.scf.nyxguard.util.SystemLocationFallback
 
 class WalkSettingActivity : AppCompatActivity() {
 
@@ -53,7 +54,7 @@ class WalkSettingActivity : AppCompatActivity() {
     private var guardians: List<GuardianDto> = emptyList()
     private val selectedGuardianIds = linkedSetOf<Int>()
 
-    private var locationClient: AMapLocationClient? = null
+    private var locationRequest: AndroidLocationProvider.Subscription? = null
     private var mapView: TextureMapView? = null
     private var aMap: AMap? = null
     private val poiAdapter = PoiSearchAdapter { tip ->
@@ -65,10 +66,7 @@ class WalkSettingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        MapsInitializer.updatePrivacyShow(this, true, true)
-        MapsInitializer.updatePrivacyAgree(this, true)
-        AMapLocationClient.updatePrivacyShow(this, true, true)
-        AMapLocationClient.updatePrivacyAgree(this, true)
+        AmapSdkInitializer.ensureInitialized(this)
 
         binding = ActivityWalkSettingBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -90,26 +88,44 @@ class WalkSettingActivity : AppCompatActivity() {
     }
 
     private fun locateCurrentPosition() {
-        locationClient = AMapLocationClient(applicationContext).apply {
-            val option = AMapLocationClientOption().apply {
-                locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
-                isOnceLocation = true
-                isNeedAddress = true
+        locationRequest?.stop()
+        locationRequest = AndroidLocationProvider.requestSingleLocation(this) { location ->
+            if (location != null) {
+                startLatLng = LatLng(location.latitude, location.longitude)
+                startName = getString(R.string.walk_current_location)
+                binding.startLocationText.text = getString(
+                    R.string.walk_current_location_coords,
+                    location.latitude,
+                    location.longitude
+                )
+                binding.startLoading.visibility = View.GONE
+                checkCanStart()
+            } else {
+                Log.w(TAG, "System locate failed, falling back to last known location")
+                applySystemLocationFallback()
             }
-            setLocationOption(option)
-            setLocationListener { location ->
-                if (location != null && location.errorCode == 0) {
-                    startLatLng = LatLng(location.latitude, location.longitude)
-                    startName = location.address ?: getString(R.string.walk_current_location)
-                    binding.startLocationText.text = startName
-                    binding.startLoading.visibility = View.GONE
-                    checkCanStart()
-                } else {
-                    binding.startLocationText.text = getString(R.string.walk_locate_failed)
-                    binding.startLoading.visibility = View.GONE
-                }
-            }
-            startLocation()
+        }
+
+        if (locationRequest == null) {
+            applySystemLocationFallback()
+        }
+    }
+
+    private fun applySystemLocationFallback() {
+        val fallbackLocation = SystemLocationFallback.getLastKnownLocation(this)
+        if (fallbackLocation != null) {
+            startLatLng = LatLng(fallbackLocation.latitude, fallbackLocation.longitude)
+            startName = getString(R.string.walk_current_location)
+            binding.startLocationText.text = getString(
+                R.string.walk_current_location_coords,
+                fallbackLocation.latitude,
+                fallbackLocation.longitude
+            )
+            binding.startLoading.visibility = View.GONE
+            checkCanStart()
+        } else {
+            binding.startLocationText.text = getString(R.string.walk_locate_failed)
+            binding.startLoading.visibility = View.GONE
         }
     }
 
@@ -407,13 +423,13 @@ class WalkSettingActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        locationClient?.stopLocation()
-        locationClient?.onDestroy()
+        locationRequest?.stop()
         mapView?.onDestroy()
         searchRunnable?.let { searchHandler.removeCallbacks(it) }
     }
 
     companion object {
+        private const val TAG = "WalkSettingActivity"
         const val EXTRA_START_LAT = "start_lat"
         const val EXTRA_START_LNG = "start_lng"
         const val EXTRA_START_NAME = "start_name"

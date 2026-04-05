@@ -36,7 +36,13 @@ class GuardianActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { finish() }
         binding.guardianRecycler.layoutManager = LinearLayoutManager(this)
         binding.guardianRecycler.adapter = adapter
-        binding.fabAdd.setOnClickListener { showAddDialog() }
+        binding.fabAdd.setOnClickListener {
+            if (guardians.size >= MAX_GUARDIANS) {
+                Toast.makeText(this, getString(R.string.guardian_limit_reached), Toast.LENGTH_SHORT).show()
+            } else {
+                showAddDialog()
+            }
+        }
 
         loadGuardians()
     }
@@ -68,7 +74,7 @@ class GuardianActivity : AppCompatActivity() {
     }
 
     private fun showAddDialog() {
-        if (guardians.size >= 5) {
+        if (guardians.size >= MAX_GUARDIANS) {
             Toast.makeText(this, getString(R.string.guardian_limit_reached), Toast.LENGTH_SHORT).show()
             return
         }
@@ -126,5 +132,17 @@ class GuardianActivity : AppCompatActivity() {
     private fun updateEmptyState() {
         binding.emptyText.visibility = if (guardians.isEmpty()) View.VISIBLE else View.GONE
         binding.guardianRecycler.visibility = if (guardians.isEmpty()) View.GONE else View.VISIBLE
+        val canAddMore = guardians.size < MAX_GUARDIANS
+        binding.fabAdd.isEnabled = canAddMore
+        binding.fabAdd.alpha = if (canAddMore) 1f else 0.55f
+        binding.fabAdd.text = if (canAddMore) {
+            getString(R.string.guardian_add)
+        } else {
+            getString(R.string.guardian_add_disabled)
+        }
+    }
+
+    private companion object {
+        const val MAX_GUARDIANS = 5
     }
 }

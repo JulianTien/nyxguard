@@ -45,6 +45,36 @@ def normalize_guardian_ids(guardian_ids: list[int]) -> list[int]:
     return normalized
 
 
+def find_recent_duplicate_sos(
+    db: Session,
+    *,
+    user_id: int,
+    trip_id: int,
+    lat: float,
+    lng: float,
+    audio_url: str | None,
+    within_seconds: int = 20,
+) -> SOSEvent | None:
+    cutoff = utc_now() - timedelta(seconds=within_seconds)
+    candidate = (
+        db.query(SOSEvent)
+        .filter(
+            SOSEvent.user_id == user_id,
+            SOSEvent.trip_id == trip_id,
+            SOSEvent.status == "active",
+            SOSEvent.created_at >= cutoff,
+        )
+        .order_by(SOSEvent.created_at.desc(), SOSEvent.id.desc())
+        .first()
+    )
+    if candidate is None:
+        return None
+
+    same_location = abs(candidate.lat - lat) <= 0.00001 and abs(candidate.lng - lng) <= 0.00001
+    same_audio = candidate.audio_url == audio_url or not candidate.audio_url or not audio_url
+    return candidate if same_location and same_audio else None
+
+
 @router.post(
     "",
     response_model=TripSummaryResponse,
@@ -256,6 +286,17 @@ def trigger_sos(
         .order_by(TripGuardian.created_at.asc(), Guardian.id.asc())
         .all()
     )
+    duplicate_sos = find_recent_duplicate_sos(
+        db,
+        user_id=current_user.id,
+        trip_id=trip.id,
+        lat=payload.lat,
+        lng=payload.lng,
+        audio_url=payload.audio_url,
+    )
+    if duplicate_sos is not None:
+        return SosResponse(status=trip.status, sos_id=duplicate_sos.id, message="SOS求助已记录")
+
     sos = SOSEvent(
         user_id=current_user.id,
         trip_id=trip.id,

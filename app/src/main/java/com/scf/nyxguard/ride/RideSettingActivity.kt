@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
@@ -13,8 +14,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.amap.api.location.AMapLocationClient
-import com.amap.api.location.AMapLocationClientOption
 import com.amap.api.maps.model.LatLng
 import com.amap.api.services.core.LatLonPoint
 import com.amap.api.services.help.Inputtips
@@ -30,6 +29,9 @@ import com.scf.nyxguard.network.GuardianDto
 import com.scf.nyxguard.network.TripGuardianSelectionStore
 import com.scf.nyxguard.network.enqueue
 import com.scf.nyxguard.profile.GuardianActivity
+import com.scf.nyxguard.util.AmapSdkInitializer
+import com.scf.nyxguard.util.AndroidLocationProvider
+import com.scf.nyxguard.util.SystemLocationFallback
 import com.scf.nyxguard.walk.PoiSearchAdapter
 
 class RideSettingActivity : AppCompatActivity() {
@@ -45,7 +47,7 @@ class RideSettingActivity : AppCompatActivity() {
     private var guardians: List<GuardianDto> = emptyList()
     private val selectedGuardianIds = linkedSetOf<Int>()
 
-    private var locationClient: AMapLocationClient? = null
+    private var locationRequest: AndroidLocationProvider.Subscription? = null
     private val poiAdapter = PoiSearchAdapter { tip -> onPoiSelected(tip) }
     private val searchHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
@@ -53,10 +55,7 @@ class RideSettingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        com.amap.api.maps.MapsInitializer.updatePrivacyShow(this, true, true)
-        com.amap.api.maps.MapsInitializer.updatePrivacyAgree(this, true)
-        AMapLocationClient.updatePrivacyShow(this, true, true)
-        AMapLocationClient.updatePrivacyAgree(this, true)
+        AmapSdkInitializer.ensureInitialized(this)
 
         binding = ActivityRideSettingBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -96,21 +95,26 @@ class RideSettingActivity : AppCompatActivity() {
     }
 
     private fun locateCurrentPosition() {
-        locationClient = AMapLocationClient(applicationContext).apply {
-            val option = AMapLocationClientOption().apply {
-                locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
-                isOnceLocation = true
-                isNeedAddress = true
+        locationRequest?.stop()
+        locationRequest = AndroidLocationProvider.requestSingleLocation(this) { location ->
+            if (location != null) {
+                startLatLng = LatLng(location.latitude, location.longitude)
+                checkCanStart()
+            } else {
+                Log.w(TAG, "System locate failed, falling back to last known location")
+                applySystemLocationFallback()
             }
-            setLocationOption(option)
-            setLocationListener { location ->
-                if (location != null && location.errorCode == 0) {
-                    startLatLng = LatLng(location.latitude, location.longitude)
-                    checkCanStart()
-                }
-            }
-            startLocation()
         }
+
+        if (locationRequest == null) {
+            applySystemLocationFallback()
+        }
+    }
+
+    private fun applySystemLocationFallback() {
+        val fallbackLocation = SystemLocationFallback.getLastKnownLocation(this) ?: return
+        startLatLng = LatLng(fallbackLocation.latitude, fallbackLocation.longitude)
+        checkCanStart()
     }
 
     private fun setupPoiSearch() {
@@ -333,12 +337,12 @@ class RideSettingActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        locationClient?.stopLocation()
-        locationClient?.onDestroy()
+        locationRequest?.stop()
         searchRunnable?.let { searchHandler.removeCallbacks(it) }
     }
 
     companion object {
+        private const val TAG = "RideSettingActivity"
         const val EXTRA_START_LAT = "start_lat"
         const val EXTRA_START_LNG = "start_lng"
         const val EXTRA_DEST_LAT = "dest_lat"

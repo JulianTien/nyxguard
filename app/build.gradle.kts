@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.net.URI
 
 plugins {
     alias(libs.plugins.android.application)
@@ -24,36 +25,45 @@ fun readConfigProperty(name: String): String? {
 
 fun normalizeBaseUrl(value: String): String = if (value.endsWith("/")) value else "$value/"
 
-val defaultLocalApiBaseUrl = "http://10.0.2.2:5001/"
-
-val requestedTasks = gradle.startParameter.taskNames.map { it.lowercase() }
-val requestedTaskText = requestedTasks.joinToString(" ")
-
-val localApiBaseUrl = readConfigProperty("nyxGuardLocalApiBaseUrl")?.let(::normalizeBaseUrl)
-val stagingApiBaseUrl = readConfigProperty("nyxGuardStagingApiBaseUrl")?.let(::normalizeBaseUrl)
-val prodApiBaseUrl = readConfigProperty("nyxGuardProdApiBaseUrl")?.let(::normalizeBaseUrl)
-
-fun requireApiBaseUrl(env: String, propertyName: String, value: String?) {
-    if (value.isNullOrBlank()) {
-        error(
-            "Missing $propertyName for $env builds. " +
-                "Set it in ~/.gradle/gradle.properties or local.properties."
-        )
+fun normalizeAndroidDebugBaseUrl(value: String): String {
+    val normalized = normalizeBaseUrl(value)
+    val uri = runCatching { URI(normalized) }.getOrNull() ?: return normalized
+    val host = uri.host?.lowercase() ?: return normalized
+    if (host != "127.0.0.1" && host != "localhost") {
+        return normalized
     }
+
+    val port = if (uri.port >= 0) ":${uri.port}" else ""
+    val path = uri.rawPath?.takeIf { it.isNotEmpty() } ?: "/"
+    val query = uri.rawQuery?.let { "?$it" } ?: ""
+    val fragment = uri.rawFragment?.let { "#$it" } ?: ""
+    return "${uri.scheme}://10.0.2.2$port$path$query$fragment"
 }
 
-if (requestedTaskText.contains("staging")) {
-    requireApiBaseUrl("staging", "nyxGuardStagingApiBaseUrl", stagingApiBaseUrl)
-}
-if (requestedTaskText.contains("prod")) {
-    requireApiBaseUrl("prod", "nyxGuardProdApiBaseUrl", prodApiBaseUrl)
-}
+val defaultApiBaseUrl = "https://nyxguard.vercel.app/"
+val sharedApiBaseUrl = (
+    readConfigProperty("nyxGuardApiBaseUrl")
+        ?: readConfigProperty("nyxGuardProdApiBaseUrl")
+        ?: readConfigProperty("nyxGuardStagingApiBaseUrl")
+        ?: readConfigProperty("nyxGuardLocalApiBaseUrl")
+        ?: defaultApiBaseUrl
+).let(::normalizeBaseUrl)
+
+val debugApiBaseUrl = (
+    readConfigProperty("nyxGuardLocalApiBaseUrl")
+        ?: readConfigProperty("nyxGuardApiBaseUrl")
+        ?: readConfigProperty("nyxGuardStagingApiBaseUrl")
+        ?: readConfigProperty("nyxGuardProdApiBaseUrl")
+        ?: defaultApiBaseUrl
+).let(::normalizeAndroidDebugBaseUrl)
 
 android {
     namespace = "com.scf.nyxguard"
     compileSdk {
         version = release(36)
     }
+
+
 
     defaultConfig {
         applicationId = "com.scf.nyxguard"
@@ -63,45 +73,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    flavorDimensions += "env"
-    productFlavors {
-        create("local") {
-            dimension = "env"
-            applicationIdSuffix = ".local"
-            buildConfigField("String", "NYXGUARD_ENV", "\"local\"")
-            buildConfigField(
-                "String",
-                "NYXGUARD_API_BASE_URL",
-                "\"${localApiBaseUrl ?: defaultLocalApiBaseUrl}\""
-            )
-            buildConfigField("boolean", "NYXGUARD_ENABLE_DEBUG_MOCK_FALLBACK", "true")
-        }
-        create("staging") {
-            dimension = "env"
-            applicationIdSuffix = ".staging"
-            buildConfigField("String", "NYXGUARD_ENV", "\"staging\"")
-            buildConfigField(
-                "String",
-                "NYXGUARD_API_BASE_URL",
-                "\"${stagingApiBaseUrl ?: "https://invalid-staging.local/"}\""
-            )
-            buildConfigField("boolean", "NYXGUARD_ENABLE_DEBUG_MOCK_FALLBACK", "true")
-        }
-        create("prod") {
-            dimension = "env"
-            buildConfigField("String", "NYXGUARD_ENV", "\"prod\"")
-            buildConfigField(
-                "String",
-                "NYXGUARD_API_BASE_URL",
-                "\"${prodApiBaseUrl ?: "https://invalid-prod.local/"}\""
-            )
-            buildConfigField("boolean", "NYXGUARD_ENABLE_DEBUG_MOCK_FALLBACK", "false")
-        }
+        buildConfigField("String", "NYXGUARD_ENV", "\"default\"")
+        buildConfigField("String", "NYXGUARD_API_BASE_URL", "\"$sharedApiBaseUrl\"")
+        buildConfigField("boolean", "NYXGUARD_ENABLE_DEBUG_MOCK_FALLBACK", "false")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "NYXGUARD_API_BASE_URL", "\"$debugApiBaseUrl\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -123,15 +103,6 @@ android {
     }
 }
 
-androidComponents {
-    beforeVariants(selector().all()) { variantBuilder ->
-        val envName = variantBuilder.productFlavors.toMap()["env"]
-        if (variantBuilder.buildType == "release" && envName != "prod") {
-            variantBuilder.enable = false
-        }
-    }
-}
-
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -142,8 +113,8 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.0")
     implementation("com.facebook.shimmer:shimmer:0.5.0")
     
-    // 高德地图 SDK（合并包：3D地图 + 定位 + 搜索）
-    implementation("com.amap.api:3dmap-location-search:10.1.600_loc6.5.1_sea9.7.4")
+    // 高德官方当前推荐的组合依赖，已包含 3D 地图、定位和搜索能力。
+    implementation("com.amap.api:3dmap-location-search:10.1.200_loc6.4.9_sea9.7.4")
     
     // 网络请求
     implementation("com.squareup.retrofit2:retrofit:2.11.0")

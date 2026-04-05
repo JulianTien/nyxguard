@@ -12,7 +12,7 @@
     <string name="home_alarm_title">警报闪光</string>
     <string name="home_alarm_desc">快速闪烁屏幕并震动，帮助你引起周围注意。</string>
     <string name="home_fake_call_desc_new">几秒内触发一通逼真的来电界面。</string>
-    <string name="guard_proto_idle_title">正在守护</string>
+    <string name="guard_proto_idle_title">守护待命</string>
     <string name="guard_proto_mode_walk">步行模式</string>
     <string name="guard_proto_mode_ride">乘车模式</string>
     <string name="guard_proto_guardian_count">已共享给 %1$d 位联系人 · %2$s</string>

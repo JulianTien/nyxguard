@@ -33,6 +33,13 @@ class ProfileFragment : Fragment() {
     private companion object {
         const val PROFILE_CACHE_PREFS = "profile_cache"
         const val KEY_EMERGENCY_PHONE = "emergency_phone"
+        const val KEY_PHONE = "phone"
+        const val KEY_CREATED_AT = "created_at"
+        const val KEY_UPDATED_AT = "updated_at"
+        const val KEY_BADGE_DAYS = "badge_days"
+        const val KEY_GUARDIAN_COUNT = "guardian_count"
+        const val KEY_ROUTES_COUNT = "routes_count"
+        const val KEY_GUARD_MINUTES = "guard_minutes"
     }
 
     private var _binding: FragmentProfileBinding? = null
@@ -74,6 +81,8 @@ class ProfileFragment : Fragment() {
         binding.userEmergencyPhone.text = getString(R.string.profile_emergency_phone_not_set)
         binding.userAccountMeta.text = getString(R.string.profile_account_meta_default)
         binding.userAvatar.setImageResource(R.drawable.ic_nav_profile)
+        renderCachedProfile()
+        renderCachedSummary()
         updateLanguageSummary()
         updateThemeSummary()
     }
@@ -109,6 +118,9 @@ class ProfileFragment : Fragment() {
                     .edit()
                     .putInt("count", guardians.size)
                     .apply()
+                profileCache().edit()
+                    .putInt(KEY_GUARDIAN_COUNT, guardians.size)
+                    .apply()
                 binding.guardianCount.text = formatGuardianCount(guardians.size)
             },
             onError = {
@@ -128,8 +140,7 @@ class ProfileFragment : Fragment() {
             },
             onError = {
                 if (_binding == null) return@enqueue
-                binding.routesValue.setText(R.string.edge_profile_stats_placeholder_routes)
-                binding.hoursValue.setText(R.string.edge_profile_stats_placeholder_hours)
+                renderCachedSummary()
             }
         )
     }
@@ -145,14 +156,18 @@ class ProfileFragment : Fragment() {
         )
         val currentTag = LocaleManager.currentLanguageTag(requireContext())
         val checkedIndex = languageTags.indexOf(currentTag).coerceAtLeast(0)
+        var selectedIndex = checkedIndex
 
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.language_dialog_title)
-            .setSingleChoiceItems(labels, checkedIndex) { dialog, which ->
-                LocaleManager.setLanguage(requireContext(), languageTags[which])
-                updateLanguageSummary()
-                dialog.dismiss()
-                requireActivity().recreate()
+            .setSingleChoiceItems(labels, checkedIndex) { _, which ->
+                selectedIndex = which
+            }
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val selectedTag = languageTags[selectedIndex]
+                if (selectedTag != currentTag) {
+                    LocaleManager.setLanguage(requireContext(), selectedTag)
+                }
             }
             .setNegativeButton(R.string.dialog_cancel, null)
             .show()
@@ -186,31 +201,50 @@ class ProfileFragment : Fragment() {
         )
         val current = ThemePreferenceStore.getThemePreference(requireContext())
         val checked = preferences.indexOf(current).coerceAtLeast(0)
+        var selectedIndex = checked
 
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.edge_profile_theme_dialog_title)
-            .setSingleChoiceItems(options, checked) { dialog, which ->
-                ThemePreferenceStore.setThemePreference(requireContext(), preferences[which])
-                updateThemeSummary()
-                dialog.dismiss()
-                requireActivity().recreate()
+            .setSingleChoiceItems(options, checked) { _, which ->
+                selectedIndex = which
+            }
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val selectedTheme = preferences[selectedIndex]
+                if (selectedTheme != current) {
+                    ThemePreferenceStore.setThemePreference(requireContext(), selectedTheme)
+                }
             }
             .setNegativeButton(R.string.dialog_cancel, null)
             .show()
     }
 
     private fun renderProfile(profile: UserDto) {
+        val cache = profileCache()
+        val phone = profile.phone?.takeIf { it.isNotBlank() }
+            ?: cache.getString(KEY_PHONE, null)
         val emergencyPhone = profile.emergency_phone?.takeIf { it.isNotBlank() }
-            ?: profileCache().getString(KEY_EMERGENCY_PHONE, null)
+            ?: cache.getString(KEY_EMERGENCY_PHONE, null)
+        val createdAt = profile.created_at?.takeIf { it.isNotBlank() }
+            ?: cache.getString(KEY_CREATED_AT, null)
+        val updatedAt = profile.updated_at?.takeIf { it.isNotBlank() }
+            ?: cache.getString(KEY_UPDATED_AT, null)
 
         binding.userName.text =
             profile.nickname.ifEmpty { getString(R.string.profile_default_name) }
         binding.userPhone.text =
-            profile.phone ?: getString(R.string.profile_phone_not_set)
+            phone ?: getString(R.string.profile_phone_not_set)
         binding.userEmergencyPhone.text =
             emergencyPhone ?: getString(R.string.profile_emergency_phone_not_set)
-        binding.userAccountMeta.text = buildAccountMeta(profile.created_at, profile.updated_at)
-        binding.profileBadge.text = getString(R.string.edge_profile_badge, profileStreakDays(profile.created_at))
+        binding.userAccountMeta.text = buildAccountMeta(createdAt, updatedAt)
+        binding.profileBadge.text = getString(R.string.edge_profile_badge, profileStreakDays(createdAt))
+
+        cache.edit()
+            .putString(KEY_PHONE, phone)
+            .putString(KEY_EMERGENCY_PHONE, emergencyPhone)
+            .putString(KEY_CREATED_AT, createdAt)
+            .putString(KEY_UPDATED_AT, updatedAt)
+            .putInt(KEY_BADGE_DAYS, profileStreakDays(createdAt))
+            .apply()
 
         val avatar = profile.avatar_url?.takeIf { it.isNotBlank() }
         if (avatar != null) {
@@ -237,19 +271,31 @@ class ProfileFragment : Fragment() {
         if (binding.userName.text.isNullOrBlank()) {
             binding.userName.text = summary.nickname
         }
+        profileCache().edit()
+            .putInt(KEY_BADGE_DAYS, summary.badge_days)
+            .putInt(KEY_GUARDIAN_COUNT, summary.guardian_count)
+            .putInt(KEY_ROUTES_COUNT, summary.frequent_routes_count)
+            .putInt(KEY_GUARD_MINUTES, summary.guard_minutes_total)
+            .apply()
     }
 
     private fun renderLocalFallback() {
+        val cache = profileCache()
         val nickname = TokenManager.getNickname(requireContext())
             .ifEmpty { getString(R.string.profile_default_name) }
         binding.userName.text = nickname
-        binding.userPhone.text = getString(R.string.profile_phone_not_set)
+        binding.userPhone.text = cache.getString(KEY_PHONE, null)
+            ?: getString(R.string.profile_phone_not_set)
         binding.userEmergencyPhone.text =
-            profileCache().getString(KEY_EMERGENCY_PHONE, null)
+            cache.getString(KEY_EMERGENCY_PHONE, null)
                 ?: getString(R.string.profile_emergency_phone_not_set)
-        binding.userAccountMeta.text = getString(R.string.profile_account_meta_default)
+        binding.userAccountMeta.text = buildAccountMeta(
+            cache.getString(KEY_CREATED_AT, null),
+            cache.getString(KEY_UPDATED_AT, null)
+        )
         binding.userAvatar.setImageResource(R.drawable.ic_nav_profile)
-        binding.profileBadge.setText(R.string.edge_profile_badge_default)
+        val badgeDays = cache.getInt(KEY_BADGE_DAYS, 1).coerceAtLeast(1)
+        binding.profileBadge.text = getString(R.string.edge_profile_badge, badgeDays)
     }
 
     private fun buildAccountMeta(createdAt: String?, updatedAt: String?): String {
@@ -341,6 +387,49 @@ class ProfileFragment : Fragment() {
             getString(R.string.profile_guardian_count, count)
         } else {
             getString(R.string.profile_not_set)
+        }
+    }
+
+    private fun renderCachedProfile() {
+        val cache = profileCache()
+        val cachedPhone = cache.getString(KEY_PHONE, null)
+        val cachedEmergencyPhone = cache.getString(KEY_EMERGENCY_PHONE, null)
+        val cachedCreatedAt = cache.getString(KEY_CREATED_AT, null)
+        val cachedUpdatedAt = cache.getString(KEY_UPDATED_AT, null)
+        val cachedBadgeDays = cache.getInt(KEY_BADGE_DAYS, 0)
+
+        if (!cachedPhone.isNullOrBlank()) {
+            binding.userPhone.text = cachedPhone
+        }
+        if (!cachedEmergencyPhone.isNullOrBlank()) {
+            binding.userEmergencyPhone.text = cachedEmergencyPhone
+        }
+        if (!cachedCreatedAt.isNullOrBlank() || !cachedUpdatedAt.isNullOrBlank()) {
+            binding.userAccountMeta.text = buildAccountMeta(cachedCreatedAt, cachedUpdatedAt)
+        }
+        if (cachedBadgeDays > 0) {
+            binding.profileBadge.text = getString(R.string.edge_profile_badge, cachedBadgeDays)
+        }
+    }
+
+    private fun renderCachedSummary() {
+        val cache = profileCache()
+        val cachedGuardianCount = cache.getInt(KEY_GUARDIAN_COUNT, -1)
+        val cachedRoutesCount = cache.getInt(KEY_ROUTES_COUNT, -1)
+        val cachedGuardMinutes = cache.getInt(KEY_GUARD_MINUTES, -1)
+
+        if (cachedGuardianCount >= 0) {
+            binding.guardianCount.text = formatGuardianCount(cachedGuardianCount)
+        }
+        if (cachedRoutesCount >= 0) {
+            binding.routesValue.text = getString(R.string.profile_summary_routes_count, cachedRoutesCount)
+        }
+        if (cachedGuardMinutes >= 0) {
+            binding.hoursValue.text = getString(
+                R.string.profile_summary_hours_count,
+                cachedGuardMinutes / 60,
+                cachedGuardMinutes % 60
+            )
         }
     }
 

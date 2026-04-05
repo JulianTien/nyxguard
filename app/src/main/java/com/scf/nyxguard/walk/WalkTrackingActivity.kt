@@ -20,7 +20,6 @@ import com.amap.api.maps.MapsInitializer
 import com.amap.api.maps.TextureMapView
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.LatLngBounds
-import com.amap.api.maps.model.MyLocationStyle
 import com.amap.api.maps.model.PolylineOptions
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.scf.nyxguard.BuildConfig
@@ -39,6 +38,7 @@ import com.scf.nyxguard.network.TripAlertRequest
 import com.scf.nyxguard.network.UploadLocationsRequest
 import com.scf.nyxguard.network.enqueue
 import com.scf.nyxguard.service.LocationTrackingService
+import com.scf.nyxguard.util.AmapSdkInitializer
 import com.scf.nyxguard.util.GeoUtils
 import com.scf.nyxguard.util.MockLocationHelper
 import com.scf.nyxguard.util.SosAudioPlaceholder
@@ -118,8 +118,7 @@ class WalkTrackingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        MapsInitializer.updatePrivacyShow(this, true, true)
-        MapsInitializer.updatePrivacyAgree(this, true)
+        AmapSdkInitializer.ensureInitialized(this)
 
         binding = ActivityWalkTrackingBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -194,16 +193,6 @@ class WalkTrackingActivity : AppCompatActivity() {
         aMap?.apply {
             uiSettings.isZoomControlsEnabled = false
             uiSettings.isMyLocationButtonEnabled = false
-
-            // 蓝点
-            val locationStyle = MyLocationStyle().apply {
-                myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE_NO_CENTER)
-                interval(10_000)
-                strokeColor(0x00000000)
-                radiusFillColor(0x220000FF)
-            }
-            myLocationStyle = locationStyle
-            isMyLocationEnabled = true
 
             // 画规划路线（蓝色）
             if (routePoints.isNotEmpty()) {

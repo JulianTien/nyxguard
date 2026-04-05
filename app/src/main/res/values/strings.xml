@@ -83,6 +83,7 @@
     <string name="walk_route_info">Route details</string>
     <string name="walk_start_trip">Start trip</string>
     <string name="walk_current_location">Current location</string>
+    <string name="walk_current_location_coords">Current location (%1$.4f, %2$.4f)</string>
     <string name="route_planning_failed">Couldn\'t plan the route</string>
     <string name="route_distance_km">Distance: %1$.1f km</string>
     <string name="route_distance_meters">Distance: %1$d m</string>
@@ -220,6 +221,7 @@
     <string name="guardian_subtitle">Add up to 5 guardians. They will receive your safety updates during trips.</string>
     <string name="guardian_empty">No guardians yet\nTap the button below to add one</string>
     <string name="guardian_add">Add guardian</string>
+    <string name="guardian_add_disabled">Guardian limit reached</string>
     <string name="guardian_name_hint">Name</string>
     <string name="guardian_phone_hint">Phone number</string>
     <string name="guardian_relationship_hint">Relationship</string>
