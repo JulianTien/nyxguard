@@ -16,6 +16,7 @@ import com.scf.nyxguard.network.TokenManager
 import com.scf.nyxguard.network.enqueue
 import com.scf.nyxguard.ride.RideSettingActivity
 import com.scf.nyxguard.walk.WalkSettingActivity
+import java.util.Calendar
 
 class HomeFragment : Fragment() {
 
@@ -42,10 +43,18 @@ class HomeFragment : Fragment() {
         val localNickname = TokenManager.getNickname(requireContext()).ifBlank { "Sarah" }
         binding.greetingText.text = getString(
             R.string.home_greeting_with_name,
-            getString(R.string.greeting_evening),
+            currentGreeting(),
             localNickname
         )
         binding.greetingSubtitle.setText(R.string.home_guard_subtitle)
+    }
+
+    private fun currentGreeting(): String {
+        return when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+            in 0..11 -> getString(R.string.greeting_morning)
+            in 12..17 -> getString(R.string.greeting_afternoon)
+            else -> getString(R.string.greeting_evening)
+        }
     }
 
     private fun setupCards() {

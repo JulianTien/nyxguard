@@ -1,9 +1,40 @@
 package com.scf.nyxguard.network
 
+import java.util.Calendar
 import retrofit2.Call
 import retrofit2.mock.BehaviorDelegate
 
 class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiService {
+
+    private fun mockAssistantReply(userMessage: String): String {
+        val message = userMessage.lowercase()
+        return when {
+            listOf("scared", "afraid", "unsafe", "follow", "following", "worried").any { it in message } ->
+                "I'm with you. Move toward a brighter spot or a store if you can, and tell me what is happening around you."
+            listOf("home", "arrive", "almost there", "close").any { it in message } ->
+                "You're close. Stay on the main route, keep your phone handy, and let me know once you're at the door."
+            listOf("ride", "taxi", "cab", "driver", "car").any { it in message } ->
+                "Got it. Keep an eye on the route, and if you want, send me the car color or plate details so we can stay focused."
+            listOf("walk", "walking", "street", "road").any { it in message } ->
+                "Thanks for the update. Stay where the lighting is better, and keep me posted on the next landmark you pass."
+            listOf("thanks", "thank you").any { it in message } ->
+                "Anytime. I'm staying with you the whole way, so keep talking to me if you want the walk to feel shorter."
+            else ->
+                "I'm here with you. Keep a steady pace, stay aware of your surroundings, and tell me anything you notice."
+        }
+    }
+
+    private fun mockProactiveReply(): String {
+        return "Quick check-in: how are things around you right now? If the street feels too quiet, move toward a brighter route and stay with me here."
+    }
+
+    private fun mockGreeting(): String {
+        return when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+            in 0..11 -> "Good morning"
+            in 12..17 -> "Good afternoon"
+            else -> "Good evening"
+        }
+    }
 
     override fun getProfile(): Call<UserDto> {
         val response = UserDto(
@@ -212,7 +243,7 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
 
     override fun chat(body: ChatRequest): Call<ChatResponse> {
         val response = ChatResponse(
-            reply = "收到您的消息：${body.content}。我会一直陪着你的！",
+            reply = mockAssistantReply(body.content),
             message_id = (1000..9999).random()
         )
         return delegate.returningResponse(response).chat(body)
@@ -220,7 +251,7 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
 
     override fun proactiveChat(body: ProactiveChatRequest): Call<ChatResponse> {
         val response = ChatResponse(
-            reply = "夜深了，我会一直陪着你走到家的。",
+            reply = mockProactiveReply(),
             message_id = (1000..9999).random()
         )
         return delegate.returningResponse(response).proactiveChat(body)
@@ -229,7 +260,7 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
     override fun getDashboard(): Call<DashboardResponseDto> {
         val response = DashboardResponseDto(
             nickname = "Sarah",
-            greeting = "晚上好",
+            greeting = mockGreeting(),
             guardian_count = 2,
             active_trip_brief = ActiveTripBriefDto(
                 id = 2001,
@@ -247,7 +278,7 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
         val response = GuardianDashboardDto(
             guardian_user_id = 2001,
             guardian_nickname = "妈妈",
-            greeting = "晚上好，正在守护 2 位用户",
+            greeting = mockGreeting(),
             protected_users = listOf(
                 GuardianProtectedTravelerDto(
                     traveler_user_id = 1001,
@@ -450,9 +481,13 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
         val now = java.time.Instant.now().toString()
         val response = ChatHistoryDto(
             messages = listOf(
-                ChatMessageDto(1, "assistant", "晚上好，一个人走夜路吗？我在陪着你哦。", tripId, "chat", now),
-                ChatMessageDto(2, "user", "是的，刚下班准备回家。", tripId, "chat", now),
-                ChatMessageDto(3, "assistant", "大概还要走多久呢？你可以和我一直保持通话。", tripId, "chat", now),
+                ChatMessageDto(1, "assistant", "Hi, I'm your NyxGuard AI Care companion. I'll stay with you while you head home tonight.", tripId, "chat", now),
+                ChatMessageDto(2, "user", "Thanks. I just left the subway and I'm walking home alone.", tripId, "chat", now),
+                ChatMessageDto(3, "assistant", "I'm with you. Is the route ahead busy, or is it getting quiet now?", tripId, "chat", now),
+                ChatMessageDto(4, "user", "It's getting quieter, but there are still a few convenience stores open.", tripId, "chat", now),
+                ChatMessageDto(5, "assistant", "That's helpful. Stay on the brighter side of the street if you can. About how many minutes do you have left?", tripId, "chat", now),
+                ChatMessageDto(6, "user", "Around ten minutes. I can already see the main road near my apartment.", tripId, "chat", now),
+                ChatMessageDto(7, "assistant", "Perfect. Keep to the main road, avoid distractions, and tell me if anyone starts matching your pace.", tripId, "chat", now),
             )
         )
         return delegate.returningResponse(response).getChatMessages(tripId)
@@ -462,7 +497,7 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
         val now = java.time.Instant.now().toString()
         val response = V2ChatMessageResponseDto(
             user_message = ChatMessageDto(10, "user", body.content, body.trip_id, "chat", now),
-            assistant_message = ChatMessageDto(11, "assistant", "我在这里，会一直陪着你。", body.trip_id, "chat", now),
+            assistant_message = ChatMessageDto(11, "assistant", mockAssistantReply(body.content), body.trip_id, "chat", now),
             used_fallback = true
         )
         return delegate.returningResponse(response).createChatMessage(body)
@@ -472,7 +507,7 @@ class MockApiService(private val delegate: BehaviorDelegate<ApiService>) : ApiSe
         val response = ChatMessageDto(
             id = (1000..9999).random(),
             role = "assistant",
-            content = "夜深了，我会一直陪着你走到家的。",
+            content = mockProactiveReply(),
             trip_id = body.trip_id,
             message_type = "proactive",
             created_at = java.time.Instant.now().toString()

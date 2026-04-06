@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
-from ai_guardian import PROACTIVE_MESSAGES, generate_guardian_reply
+from ai_guardian import generate_guardian_reply, get_proactive_message, is_probably_english
 from database import get_db
 from deps import get_current_user
 from models import ChatMessage, Guardian, GuardianLink, Location, NotificationEvent, SOSEvent, Trip, TripGuardian, User
@@ -157,8 +157,14 @@ def get_guardian_summary(guardians: list[Guardian]) -> str:
     return f"{len(guardians)}位紧急联系人"
 
 
-def build_greeting() -> str:
+def build_greeting(prefer_english: bool = False) -> str:
     hour = datetime.now().hour
+    if prefer_english:
+        if hour < 12:
+            return "Good morning"
+        if hour < 18:
+            return "Good afternoon"
+        return "Good evening"
     if hour < 12:
         return "早上好"
     if hour < 18:
@@ -180,9 +186,13 @@ def serialize_message(message: ChatMessage) -> ChatMessageRead:
     return ChatMessageRead.model_validate(message)
 
 
-def build_trip_context(trip: Optional[Trip]) -> Optional[str]:
+def build_trip_context(trip: Optional[Trip], *, prefer_english: bool = False) -> Optional[str]:
     if trip is None:
         return None
+    if prefer_english:
+        mode = "walking" if trip.trip_type == "walk" else "ride"
+        destination = trip.end_name or "Unnamed destination"
+        return f"Active {mode} guard. Destination: {destination}. Status: {trip.status}."
     mode = "步行" if trip.trip_type == "walk" else "乘车"
     return f"{mode}守护中，目的地：{trip.end_name or '未命名目的地'}，状态：{trip.status}"
 
@@ -193,8 +203,9 @@ def create_proactive_chat_message(
     user_id: int,
     trip_id: Optional[int],
     trigger: str,
+    prefer_english: bool = False,
 ) -> ChatMessage:
-    reply = PROACTIVE_MESSAGES.get(trigger, PROACTIVE_MESSAGES["periodic"])
+    reply = get_proactive_message(trigger, prefer_english=prefer_english)
     message = ChatMessage(
         user_id=user_id,
         role="assistant",
@@ -342,9 +353,11 @@ def get_sos_media(
     responses={401: {"model": ErrorResponse}},
 )
 def get_dashboard(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DashboardResponse:
+    prefer_english = is_probably_english("", request.headers.get("Accept-Language"))
     active_trip = get_active_trip(db, current_user.id)
     guardian_count = db.query(Guardian).filter(Guardian.user_id == current_user.id).count()
     active_trip_brief = None
@@ -360,7 +373,7 @@ def get_dashboard(
 
     return DashboardResponse(
         nickname=current_user.nickname,
-        greeting=build_greeting(),
+        greeting=build_greeting(prefer_english=prefer_english),
         guardian_count=guardian_count,
         active_trip_brief=active_trip_brief,
         quick_tools_state={
@@ -376,9 +389,11 @@ def get_dashboard(
     responses={401: {"model": ErrorResponse}},
 )
 def get_guardian_dashboard(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> GuardianDashboardResponse:
+    prefer_english = is_probably_english("", request.headers.get("Accept-Language"))
     links = get_guardian_links_for_guardian(db, current_user.id)
     protected_users: list[GuardianProtectedTravelerRead] = []
     active_trip_count = 0
@@ -449,7 +464,7 @@ def get_guardian_dashboard(
     return GuardianDashboardResponse(
         guardian_user_id=current_user.id,
         guardian_nickname=current_user.nickname,
-        greeting=build_greeting(),
+        greeting=build_greeting(prefer_english=prefer_english),
         protected_users=protected_users,
         active_trip_count=active_trip_count,
         pending_alert_count=pending_alert_count,
@@ -719,6 +734,7 @@ def list_chat_messages(
 )
 def create_chat_message(
     payload: ChatMessageCreateRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> V2ChatMessageResponse:
@@ -739,7 +755,12 @@ def create_chat_message(
     db.add(user_message)
     db.flush()
 
-    reply, used_fallback = generate_guardian_reply(payload.content, build_trip_context(trip))
+    prefer_english = is_probably_english(payload.content, request.headers.get("Accept-Language"))
+    reply, used_fallback = generate_guardian_reply(
+        payload.content,
+        build_trip_context(trip, prefer_english=prefer_english),
+        prefer_english=prefer_english,
+    )
     assistant_message = ChatMessage(
         user_id=current_user.id,
         role="assistant",
@@ -766,6 +787,7 @@ def create_chat_message(
 )
 def create_proactive_message(
     payload: ProactiveChatRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ChatMessageRead:
@@ -774,6 +796,7 @@ def create_proactive_message(
         user_id=current_user.id,
         trip_id=payload.trip_id,
         trigger=payload.trigger,
+        prefer_english=is_probably_english("", request.headers.get("Accept-Language")),
     )
     db.commit()
     db.refresh(message)
@@ -788,6 +811,7 @@ def create_proactive_message(
 def create_trip_alert(
     trip_id: int,
     payload: TripAlertRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> TripAlertResponse:
@@ -803,7 +827,8 @@ def create_trip_alert(
         "walk_deviation": "deviation",
         "ride_deviation": "deviation",
     }
-    proactive_copy = PROACTIVE_MESSAGES.get(trigger_map[payload.alert_type], PROACTIVE_MESSAGES["periodic"])
+    prefer_english = is_probably_english("", request.headers.get("Accept-Language"))
+    proactive_copy = get_proactive_message(trigger_map[payload.alert_type], prefer_english=prefer_english)
 
     shared_payload = {
         "trip": trip_snapshot(trip),
@@ -834,6 +859,7 @@ def create_trip_alert(
             user_id=current_user.id,
             trip_id=trip.id,
             trigger=trigger_map[payload.alert_type],
+            prefer_english=prefer_english,
         )
     db.commit()
     if proactive_message is not None:

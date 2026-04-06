@@ -98,6 +98,7 @@ class MapFragment : Fragment() {
                 binding.mapContainer.addView(mv)
                 mv.onCreate(savedInstanceState)
                 aMap = mv.map
+                AmapSdkInitializer.applyMapLanguage(requireContext(), aMap)
                 mapAvailable = true
             }
             setupMap()

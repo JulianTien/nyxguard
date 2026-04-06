@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 import unittest
 
@@ -95,6 +96,13 @@ class V2ApiTestCase(unittest.TestCase):
         self.assertEqual(dashboard.json()["guardian_count"], 1)
         self.assertEqual(dashboard.json()["active_trip_brief"]["id"], trip_id)
 
+        dashboard_en = self.client.get(
+            "/api/v2/dashboard",
+            headers={**self.auth_header(token), "Accept-Language": "en-US"},
+        )
+        self.assertEqual(dashboard_en.status_code, 200, dashboard_en.text)
+        self.assertIn(dashboard_en.json()["greeting"], {"Good morning", "Good afternoon", "Good evening"})
+
         locations = self.client.post(
             f"/api/trips/{trip_id}/locations",
             headers=self.auth_header(token),
@@ -121,6 +129,15 @@ class V2ApiTestCase(unittest.TestCase):
         chat_payload = chat.json()
         self.assertTrue(chat_payload["assistant_message"]["content"])
         self.assertTrue(chat_payload["used_fallback"])
+
+        english_chat = self.client.post(
+            "/api/v2/chat/messages",
+            headers={**self.auth_header(token), "Accept-Language": "en-US"},
+            json={"content": "hello, I'm walking home alone", "trip_id": trip_id},
+        )
+        self.assertEqual(english_chat.status_code, 200, english_chat.text)
+        english_content = english_chat.json()["assistant_message"]["content"]
+        self.assertFalse(re.search(r"[\u4e00-\u9fff]", english_content), english_content)
 
         history = self.client.get(
             f"/api/v2/chat/messages?trip_id={trip_id}",

@@ -2,6 +2,7 @@ package com.scf.nyxguard.network
 
 import android.content.Context
 import com.scf.nyxguard.BuildConfig
+import com.scf.nyxguard.LocaleManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -77,14 +78,15 @@ object ApiClient {
 
         val authInterceptor = Interceptor { chain ->
             val token = appContext?.let { TokenManager.getToken(it) }
-            val request = if (token != null) {
-                chain.request().newBuilder()
-                    .addHeader("Authorization", "Bearer $token")
-                    .build()
-            } else {
-                chain.request()
+            val languageTag = LocaleManager.currentLanguageTag(appContext)
+            val builder = chain.request().newBuilder()
+                .addHeader("Accept-Language", languageTag)
+
+            if (token != null) {
+                builder.addHeader("Authorization", "Bearer $token")
             }
-            chain.proceed(request)
+
+            chain.proceed(builder.build())
         }
 
         val client = OkHttpClient.Builder()

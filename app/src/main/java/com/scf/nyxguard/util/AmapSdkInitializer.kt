@@ -3,8 +3,10 @@ package com.scf.nyxguard.util
 import android.content.Context
 import android.util.Log
 import com.amap.api.location.AMapLocationClient
+import com.amap.api.maps.AMap
 import com.amap.api.maps.MapsInitializer
 import com.amap.api.services.core.ServiceSettings
+import com.scf.nyxguard.LocaleManager
 
 object AmapSdkInitializer {
 
@@ -33,6 +35,16 @@ object AmapSdkInitializer {
             }
 
             initialized = true
+        }
+    }
+
+    fun applyMapLanguage(context: Context, map: AMap?) {
+        val targetMap = map ?: return
+        val language = if (LocaleManager.isChinese(context)) AMap.CHINESE else AMap.ENGLISH
+        runCatching {
+            targetMap.setMapLanguage(language)
+        }.onFailure { error ->
+            Log.w(TAG, "Failed to apply AMap language: $language", error)
         }
     }
 

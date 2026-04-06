@@ -51,6 +51,8 @@ class RideSettingActivity : AppCompatActivity() {
     private val poiAdapter = PoiSearchAdapter { tip -> onPoiSelected(tip) }
     private val searchHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
+    private var isApplyingPoiSelection = false
+    private var allowPoiSuggestions = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -125,6 +127,8 @@ class RideSettingActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                if (isApplyingPoiSelection) return
+                allowPoiSuggestions = true
                 searchRunnable?.let { searchHandler.removeCallbacks(it) }
                 val keyword = s?.toString()?.trim() ?: ""
                 if (keyword.length < 2) {
@@ -219,6 +223,10 @@ class RideSettingActivity : AppCompatActivity() {
         tips.setInputtipsListener { tipList, rCode ->
             if (rCode == 1000 && tipList != null) {
                 runOnUiThread {
+                    val currentKeyword = binding.destInput.text?.toString()?.trim().orEmpty()
+                    if (!allowPoiSuggestions || currentKeyword != keyword) {
+                        return@runOnUiThread
+                    }
                     poiAdapter.submitList(tipList)
                     binding.poiRecycler.visibility =
                         if (tipList.any { it.point != null }) View.VISIBLE else View.GONE
@@ -231,7 +239,15 @@ class RideSettingActivity : AppCompatActivity() {
     private fun onPoiSelected(tip: Tip) {
         destLatLng = LatLng(tip.point.latitude, tip.point.longitude)
         destName = tip.name
-        binding.destInput.setText(destName)
+        searchRunnable?.let { searchHandler.removeCallbacks(it) }
+        allowPoiSuggestions = false
+        isApplyingPoiSelection = true
+        try {
+            binding.destInput.setText(destName)
+            binding.destInput.setSelection(destName.length)
+        } finally {
+            isApplyingPoiSelection = false
+        }
         binding.destInput.clearFocus()
         binding.poiRecycler.visibility = View.GONE
 

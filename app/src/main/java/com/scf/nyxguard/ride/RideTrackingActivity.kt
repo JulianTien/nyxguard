@@ -214,6 +214,7 @@ class RideTrackingActivity : AppCompatActivity() {
                 binding.mapContainer.addView(mv)
                 mv.onCreate(savedInstanceState)
                 aMap = mv.map
+                AmapSdkInitializer.applyMapLanguage(this, aMap)
             }
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.map_init_failed), Toast.LENGTH_SHORT).show()
