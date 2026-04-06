@@ -256,7 +256,12 @@ class WalkSettingActivity : AppCompatActivity() {
                     binding.mapPreviewContainer.addView(mv, 0)
                     mv.onCreate(null)
                     aMap = mv.map
-                    AmapSdkInitializer.applyMapLanguage(this, aMap)
+                    AmapSdkInitializer.applyMapLanguage(
+                        context = this,
+                        map = aMap,
+                        scenePoints = routePoints + listOf(start, dest),
+                        sceneLabels = listOf(destName),
+                    )
                     aMap?.uiSettings?.apply {
                         isZoomControlsEnabled = false
                         isScrollGesturesEnabled = false

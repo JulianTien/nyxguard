@@ -184,7 +184,12 @@ class WalkTrackingActivity : AppCompatActivity() {
                 binding.mapContainer.addView(mv)
                 mv.onCreate(savedInstanceState)
                 aMap = mv.map
-                AmapSdkInitializer.applyMapLanguage(this, aMap)
+                AmapSdkInitializer.applyMapLanguage(
+                    context = this,
+                    map = aMap,
+                    scenePoints = routePoints + listOfNotNull(startLatLng, destLatLng),
+                    sceneLabels = listOf(destName),
+                )
             }
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.map_init_failed), Toast.LENGTH_SHORT).show()

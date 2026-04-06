@@ -94,11 +94,24 @@ class MapFragment : Fragment() {
     private fun initMap(savedInstanceState: Bundle?) {
         try {
             hideFallback()
+            val snapshot = ActiveTripStore.get(requireContext())
             mapView = TextureMapView(requireContext()).also { mv ->
                 binding.mapContainer.addView(mv)
                 mv.onCreate(savedInstanceState)
                 aMap = mv.map
-                AmapSdkInitializer.applyMapLanguage(requireContext(), aMap)
+                AmapSdkInitializer.applyMapLanguage(
+                    context = requireContext(),
+                    map = aMap,
+                    scenePoints = buildList {
+                        snapshot?.takeIf { it.startLat != 0.0 || it.startLng != 0.0 }?.let {
+                            add(LatLng(it.startLat, it.startLng))
+                        }
+                        snapshot?.takeIf { it.endLat != 0.0 || it.endLng != 0.0 }?.let {
+                            add(LatLng(it.endLat, it.endLng))
+                        }
+                    },
+                    sceneLabels = listOfNotNull(snapshot?.destination),
+                )
                 mapAvailable = true
             }
             setupMap()
@@ -168,6 +181,11 @@ class MapFragment : Fragment() {
     }
 
     private fun onLocationReceived(location: Location) {
+        AmapSdkInitializer.applyMapLanguage(
+            context = requireContext(),
+            map = aMap,
+            scenePoints = listOf(LatLng(location.latitude, location.longitude)),
+        )
         aMap?.animateCamera(
             CameraUpdateFactory.newLatLngZoom(
                 LatLng(location.latitude, location.longitude),
