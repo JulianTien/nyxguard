@@ -36,9 +36,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     private lateinit var homeFragment: HomeFragment
-    private lateinit var mapFragment: MapFragment
-    private lateinit var chatFragment: ChatFragment
-    private lateinit var profileFragment: ProfileFragment
+    private var mapFragment: MapFragment? = null
+    private var chatFragment: ChatFragment? = null
+    private var profileFragment: ProfileFragment? = null
     private var activeFragment: Fragment? = null
     private var selectedNavId: Int = R.id.nav_home
     private var globalSosInFlight: Boolean = false
@@ -76,14 +76,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupFragments() {
         homeFragment = HomeFragment()
-        mapFragment = MapFragment()
-        chatFragment = ChatFragment()
-        profileFragment = ProfileFragment()
 
         supportFragmentManager.beginTransaction()
-            .add(R.id.fragment_container, profileFragment, TAG_PROFILE).hide(profileFragment)
-            .add(R.id.fragment_container, chatFragment, TAG_CHAT).hide(chatFragment)
-            .add(R.id.fragment_container, mapFragment, TAG_MAP).hide(mapFragment)
             .add(R.id.fragment_container, homeFragment, TAG_HOME)
             .commitNow()
         activeFragment = homeFragment
@@ -92,28 +86,20 @@ class MainActivity : AppCompatActivity() {
     private fun restoreFragments(savedInstanceState: Bundle) {
         val fm = supportFragmentManager
         homeFragment = fm.findFragmentByTag(TAG_HOME) as? HomeFragment ?: HomeFragment()
-        mapFragment = fm.findFragmentByTag(TAG_MAP) as? MapFragment ?: MapFragment()
-        chatFragment = fm.findFragmentByTag(TAG_CHAT) as? ChatFragment ?: ChatFragment()
-        profileFragment = fm.findFragmentByTag(TAG_PROFILE) as? ProfileFragment ?: ProfileFragment()
+        mapFragment = fm.findFragmentByTag(TAG_MAP) as? MapFragment
+        chatFragment = fm.findFragmentByTag(TAG_CHAT) as? ChatFragment
+        profileFragment = fm.findFragmentByTag(TAG_PROFILE) as? ProfileFragment
 
-        if (!homeFragment.isAdded || !mapFragment.isAdded || !chatFragment.isAdded || !profileFragment.isAdded) {
+        if (!homeFragment.isAdded) {
             fm.beginTransaction().apply {
-                if (!profileFragment.isAdded) add(R.id.fragment_container, profileFragment, TAG_PROFILE).hide(profileFragment)
-                if (!chatFragment.isAdded) add(R.id.fragment_container, chatFragment, TAG_CHAT).hide(chatFragment)
-                if (!mapFragment.isAdded) add(R.id.fragment_container, mapFragment, TAG_MAP).hide(mapFragment)
                 if (!homeFragment.isAdded) add(R.id.fragment_container, homeFragment, TAG_HOME)
             }.commitNow()
         }
 
         selectedNavId = savedInstanceState.getInt(KEY_SELECTED_NAV, R.id.nav_home)
-        val targetFragment = when (selectedNavId) {
-            R.id.nav_profile -> profileFragment
-            R.id.nav_chat -> chatFragment
-            R.id.nav_map -> mapFragment
-            else -> homeFragment
-        }
+        val targetFragment = resolveFragmentForNav(selectedNavId)
         fm.beginTransaction().apply {
-            listOf(homeFragment, mapFragment, chatFragment, profileFragment).forEach { fragment ->
+            allFragments().forEach { fragment ->
                 if (fragment === targetFragment) show(fragment) else hide(fragment)
             }
         }.commitNow()
@@ -122,9 +108,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupBottomNav() {
         binding.navHome.setOnClickListener { switchFragment(homeFragment, R.id.nav_home) }
-        binding.navMap.setOnClickListener { switchFragment(mapFragment, R.id.nav_map) }
-        binding.navChat.setOnClickListener { switchFragment(chatFragment, R.id.nav_chat) }
-        binding.navProfile.setOnClickListener { switchFragment(profileFragment, R.id.nav_profile) }
+        binding.navMap.setOnClickListener { switchFragment(requireMapFragment(), R.id.nav_map) }
+        binding.navChat.setOnClickListener { switchFragment(requireChatFragment(), R.id.nav_chat) }
+        binding.navProfile.setOnClickListener { switchFragment(requireProfileFragment(), R.id.nav_profile) }
     }
 
     private fun setupGlobalSos() {
@@ -187,7 +173,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         if (selectedNavId != R.id.nav_map) {
-            switchFragment(mapFragment, R.id.nav_map)
+            switchFragment(requireMapFragment(), R.id.nav_map)
         } else {
             renderBottomNav()
         }
@@ -221,12 +207,54 @@ class MainActivity : AppCompatActivity() {
     private fun switchFragment(target: Fragment, navId: Int) {
         if (target === activeFragment) return
         supportFragmentManager.beginTransaction().apply {
+            if (!target.isAdded) {
+                add(
+                    R.id.fragment_container,
+                    target,
+                    when (target) {
+                        is HomeFragment -> TAG_HOME
+                        is MapFragment -> TAG_MAP
+                        is ChatFragment -> TAG_CHAT
+                        is ProfileFragment -> TAG_PROFILE
+                        else -> null
+                    }
+                )
+            }
             activeFragment?.let { hide(it) }
             show(target)
         }.commit()
         activeFragment = target
         selectedNavId = navId
         renderBottomNav()
+    }
+
+    private fun resolveFragmentForNav(navId: Int): Fragment =
+        when (navId) {
+            R.id.nav_map -> requireMapFragment()
+            R.id.nav_chat -> requireChatFragment()
+            R.id.nav_profile -> requireProfileFragment()
+            else -> homeFragment
+        }
+
+    private fun allFragments(): List<Fragment> =
+        listOfNotNull(homeFragment, mapFragment, chatFragment, profileFragment)
+
+    private fun requireMapFragment(): MapFragment {
+        val existing = mapFragment
+        if (existing != null) return existing
+        return MapFragment().also { mapFragment = it }
+    }
+
+    private fun requireChatFragment(): ChatFragment {
+        val existing = chatFragment
+        if (existing != null) return existing
+        return ChatFragment().also { chatFragment = it }
+    }
+
+    private fun requireProfileFragment(): ProfileFragment {
+        val existing = profileFragment
+        if (existing != null) return existing
+        return ProfileFragment().also { profileFragment = it }
     }
 
     private fun renderBottomNav() {
@@ -274,8 +302,7 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "GLThread 崩溃已拦截（模拟器不支持所需 OpenGL 版本）", throwable)
                 // 在主线程通知 MapFragment 切换到降级模式
                 runOnUiThread {
-                    val mapFrag = supportFragmentManager.findFragmentByTag(TAG_MAP) as? MapFragment
-                    mapFrag?.onGLContextFailed()
+                    (supportFragmentManager.findFragmentByTag(TAG_MAP) as? MapFragment)?.onGLContextFailed()
                 }
             } else {
                 defaultHandler?.uncaughtException(thread, throwable)
