@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.net.URI
+import org.gradle.api.GradleException
 
 plugins {
     alias(libs.plugins.android.application)
@@ -40,6 +41,42 @@ fun normalizeAndroidDebugBaseUrl(value: String): String {
     return "${uri.scheme}://10.0.2.2$port$path$query$fragment"
 }
 
+data class ReleaseSigningConfig(
+    val storeFilePath: String,
+    val storePassword: String,
+    val keyAlias: String,
+    val keyPassword: String,
+)
+
+fun readReleaseSigningConfig(): ReleaseSigningConfig? {
+    val storeFilePath = readConfigProperty("nyxGuardReleaseStoreFile")
+    val storePassword = readConfigProperty("nyxGuardReleaseStorePassword")
+    val keyAlias = readConfigProperty("nyxGuardReleaseKeyAlias")
+    val keyPassword = readConfigProperty("nyxGuardReleaseKeyPassword")
+
+    val values = listOf(storeFilePath, storePassword, keyAlias, keyPassword)
+    val hasAny = values.any { !it.isNullOrBlank() }
+    val hasAll = values.all { !it.isNullOrBlank() }
+
+    if (hasAny && !hasAll) {
+        throw GradleException(
+            "Release signing properties are incomplete. Configure nyxGuardReleaseStoreFile, " +
+                "nyxGuardReleaseStorePassword, nyxGuardReleaseKeyAlias, and nyxGuardReleaseKeyPassword."
+        )
+    }
+
+    if (!hasAll) {
+        return null
+    }
+
+    return ReleaseSigningConfig(
+        storeFilePath = storeFilePath!!,
+        storePassword = storePassword!!,
+        keyAlias = keyAlias!!,
+        keyPassword = keyPassword!!,
+    )
+}
+
 val defaultApiBaseUrl = "https://nyxguard.vercel.app/"
 val sharedApiBaseUrl = (
     readConfigProperty("nyxGuardApiBaseUrl")
@@ -50,12 +87,30 @@ val sharedApiBaseUrl = (
 ).let(::normalizeBaseUrl)
 
 val debugApiBaseUrl = (
-    readConfigProperty("nyxGuardLocalApiBaseUrl")
-        ?: readConfigProperty("nyxGuardApiBaseUrl")
+    readConfigProperty("nyxGuardApiBaseUrl")
+        ?: readConfigProperty("nyxGuardLocalApiBaseUrl")
         ?: readConfigProperty("nyxGuardStagingApiBaseUrl")
         ?: readConfigProperty("nyxGuardProdApiBaseUrl")
         ?: defaultApiBaseUrl
 ).let(::normalizeAndroidDebugBaseUrl)
+
+val releaseSigningConfig = readReleaseSigningConfig()
+val isReleaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.contains("release", ignoreCase = true)
+}
+
+if (isReleaseTaskRequested && releaseSigningConfig == null) {
+    throw GradleException(
+        "Release signing is required for release tasks. Pass nyxGuardReleaseStoreFile, " +
+            "nyxGuardReleaseStorePassword, nyxGuardReleaseKeyAlias, and nyxGuardReleaseKeyPassword."
+    )
+}
+
+if (isReleaseTaskRequested && !sharedApiBaseUrl.startsWith("https://")) {
+    throw GradleException(
+        "Release builds must use an HTTPS nyxGuardApiBaseUrl. Current value: $sharedApiBaseUrl"
+    )
+}
 
 android {
     namespace = "com.scf.nyxguard"
@@ -76,14 +131,32 @@ android {
         buildConfigField("String", "NYXGUARD_ENV", "\"default\"")
         buildConfigField("String", "NYXGUARD_API_BASE_URL", "\"$sharedApiBaseUrl\"")
         buildConfigField("boolean", "NYXGUARD_ENABLE_DEBUG_MOCK_FALLBACK", "false")
+        manifestPlaceholders["nyxGuardUsesCleartextTraffic"] = "false"
+    }
+
+    signingConfigs {
+        if (releaseSigningConfig != null) {
+            create("release") {
+                storeFile = file(releaseSigningConfig.storeFilePath)
+                storePassword = releaseSigningConfig.storePassword
+                keyAlias = releaseSigningConfig.keyAlias
+                keyPassword = releaseSigningConfig.keyPassword
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
     }
 
     buildTypes {
         debug {
             buildConfigField("String", "NYXGUARD_API_BASE_URL", "\"$debugApiBaseUrl\"")
+            manifestPlaceholders["nyxGuardUsesCleartextTraffic"] = "true"
         }
         release {
             isMinifyEnabled = false
+            if (releaseSigningConfig != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

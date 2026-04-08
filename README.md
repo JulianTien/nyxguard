@@ -94,6 +94,13 @@ Supported property names:
 
 - `nyxGuardApiBaseUrl`
 
+Release signing properties for production APKs:
+
+- `nyxGuardReleaseStoreFile`
+- `nyxGuardReleaseStorePassword`
+- `nyxGuardReleaseKeyAlias`
+- `nyxGuardReleaseKeyPassword`
+
 Backward-compatible fallback order:
 
 - `nyxGuardProdApiBaseUrl`
@@ -115,6 +122,10 @@ Build the release APK:
 ```bash
 ./gradlew assembleRelease
 ```
+
+Release builds now require the four `nyxGuardRelease*` properties above. If they are missing,
+Gradle fails fast instead of producing an unsigned production artifact.
+Release builds also require `nyxGuardApiBaseUrl` to use `https://`.
 
 Run unit tests:
 
