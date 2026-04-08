@@ -7,6 +7,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -49,6 +51,31 @@ class TokenManagerInstrumentedTest {
         assertNotNull(prefs.getString(TOKEN_IV_KEY, null))
     }
 
+    @Test
+    fun hasValidSession_clearsExpiredLegacyToken() {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString(LEGACY_TOKEN_KEY, EXPIRED_TOKEN)
+            .putInt(USER_ID_KEY, USER_ID)
+            .putString(NICKNAME_KEY, NICKNAME)
+            .apply()
+
+        assertFalse(TokenManager.hasValidSession(context))
+        assertNull(TokenManager.getToken(context))
+        assertTrue(prefs.all.isEmpty())
+    }
+
+    @Test
+    fun logout_clearsEncryptedTokenState() {
+        TokenManager.saveLogin(context, TOKEN, USER_ID, NICKNAME)
+
+        TokenManager.logout(context)
+
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        assertNull(TokenManager.getToken(context))
+        assertTrue(prefs.all.isEmpty())
+    }
+
     private companion object {
         const val PREFS_NAME = "nyxguard_auth"
         const val LEGACY_TOKEN_KEY = "jwt_token"
@@ -60,5 +87,7 @@ class TokenManagerInstrumentedTest {
         const val NICKNAME = "Nyx"
         const val TOKEN =
             "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjQ3MDAwMDAwMDAsInN1YiI6IjcifQ.signature"
+        const val EXPIRED_TOKEN =
+            "eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjEwLCJzdWIiOiI3In0.signature"
     }
 }

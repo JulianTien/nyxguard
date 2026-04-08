@@ -131,6 +131,7 @@ android {
         buildConfigField("String", "NYXGUARD_ENV", "\"default\"")
         buildConfigField("String", "NYXGUARD_API_BASE_URL", "\"$sharedApiBaseUrl\"")
         buildConfigField("boolean", "NYXGUARD_ENABLE_DEBUG_MOCK_FALLBACK", "false")
+        manifestPlaceholders["nyxGuardAllowBackup"] = "false"
         manifestPlaceholders["nyxGuardUsesCleartextTraffic"] = "false"
     }
 
@@ -150,10 +151,12 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "NYXGUARD_API_BASE_URL", "\"$debugApiBaseUrl\"")
+            manifestPlaceholders["nyxGuardAllowBackup"] = "true"
             manifestPlaceholders["nyxGuardUsesCleartextTraffic"] = "true"
         }
         release {
             isMinifyEnabled = false
+            manifestPlaceholders["nyxGuardAllowBackup"] = "false"
             if (releaseSigningConfig != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
