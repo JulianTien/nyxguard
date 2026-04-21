@@ -22,7 +22,7 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
       - run: ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nyxguard-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: tar -czf nyxguard-backend.tar.gz backend
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nyxguard-backend
           path: nyxguard-backend.tar.gz
