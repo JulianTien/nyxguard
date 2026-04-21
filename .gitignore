@@ -1,5 +1,5 @@
 *.iml
-.gradle
+.gradle/
 /local.properties
 /.idea/caches
 /.idea/libraries
@@ -20,7 +20,9 @@ PLANS.md
 .vercel/
 
 # Android
-app/build/
+android/app/build/
+android/local.properties
+android/.gradle/
 
 # Python backend
 backend/.env
@@ -43,3 +45,5 @@ venv/
 .venv/
 Docs/QA/artifacts/*
 !Docs/QA/artifacts/.gitkeep
+docs/QA/artifacts/*
+!docs/QA/artifacts/.gitkeep

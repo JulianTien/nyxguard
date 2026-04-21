@@ -1,0 +1,6 @@
+# Android SDK path for local development.
+sdk.dir=/path/to/android/sdk
+
+# Optional backend endpoints.
+nyxGuardApiBaseUrl=https://example.invalid/
+nyxGuardLocalApiBaseUrl=http://10.0.2.2:5001/
