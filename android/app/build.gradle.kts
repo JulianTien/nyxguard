@@ -138,9 +138,9 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
 
     // Room
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    kapt("androidx.room:room-compiler:2.8.4")
 
     // MockWebServer for testing
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
